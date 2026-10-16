@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en" class="front">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speech coach</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f5ef;--surface:#ffffff;--ink:#14211c;--muted:#5b6b64;--line:#d5ddd4;
+  --accent:#2f4cdd;--accent-ink:#ffffff;--wave:#12a37f;--warn:#b8650f;--bad:#c93a3a;--mark:#fde1d8;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1815;--surface:#16231f;--ink:#e6eee8;--muted:#9bb0a6;--line:#27382f;
+    --accent:#8aa0ff;--accent-ink:#0e1815;--wave:#3fd1a5;--warn:#f0a050;--bad:#ff7a7a;--mark:#4a2a24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1815;--surface:#16231f;--ink:#e6eee8;--muted:#9bb0a6;--line:#27382f;
+  --accent:#8aa0ff;--accent-ink:#0e1815;--wave:#3fd1a5;--warn:#f0a050;--bad:#ff7a7a;--mark:#4a2a24;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.45}
+main{max-width:480px;margin:0 auto;padding:20px 18px 40px}
+h1{font-size:2rem;line-height:1.1;margin:8px 0 12px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.25rem;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:14px 18px;min-height:48px}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink);font-weight:600;width:100%}
+.stop{background:var(--bad);color:#fff;font-weight:600;width:100%}
+.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.status{min-height:2.9em}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:6px 0 14px}
+.bar>i{display:block;height:100%;width:0;background:var(--wave);transition:width .08s linear}
+.pills{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.pill{background:var(--surface);border:1.5px solid var(--line);color:var(--ink)}
+.pill[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
+.stage{position:relative;display:grid;place-items:center;height:250px}
+.ring{position:absolute;width:190px;height:190px;border-radius:50%;border:2px dashed var(--muted);opacity:.6}
+.orb{width:190px;height:190px;border-radius:50%;background:var(--wave);transform:scale(.35);transition:transform .09s linear}
+.hz{position:absolute;bottom:4px;font-size:.95rem;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin:12px 0}
+.transcript{min-height:110px;max-height:170px;overflow-y:auto;font-size:1.05rem}
+.transcript mark{background:var(--mark);color:inherit;border-radius:6px;padding:0 4px;font-weight:600}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:.9rem}
+.overall{font-size:3.4rem;font-weight:800;line-height:1}
+.score{margin:12px 0}
+.score .top{display:flex;justify-content:space-between;font-weight:600}
+.score .hint{font-size:.85rem;color:var(--muted)}
+.score .bar{margin:6px 0 2px}
+.score .bar>i{background:var(--accent)}
+.tips{padding-left:20px;margin:0}
+.tips li{margin:0 0 10px}
+.chart{overflow-x:auto}
+.chart svg{width:100%;min-width:300px;height:auto;display:block}
+.c-vol{fill:var(--wave);opacity:.35}
+.c-pitch{fill:none;stroke:var(--accent);stroke-width:2}
+.c-good{fill:var(--wave);opacity:.22}
+.c-bad{fill:var(--bad);opacity:.25}
+.c-up{fill:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;color:var(--muted);margin-top:8px}
+input[type=text],select{font:inherit;width:100%;min-height:48px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+label{display:block;font-weight:600;margin:0 0 6px}
+details{margin:12px 0}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--muted)}
+.field{margin:14px 0}
+@media (prefers-reduced-motion:reduce){.orb,.bar>i{transition:none}.decal{animation:none!important}}
+
+/* Front page: black with die-cut sticker decals */
+:root.front{--bg:#000000;--surface:#111111;--ink:#f5f5f5;--muted:#a6a6a6;--line:#2c2c2c;--accent:#ffd23f;--accent-ink:#111111;color-scheme:dark}
+.hero{position:relative;height:340px;margin:0 -18px 16px}
+.hero h1{position:absolute;left:18px;right:18px;bottom:0;margin:0;font-size:2.7rem;line-height:1}
+.decal{position:absolute;--r:0deg;transform:rotate(var(--r));animation:slap .5s cubic-bezier(.2,1.5,.4,1) both;animation-delay:calc(var(--i)*100ms);filter:drop-shadow(0 6px 10px rgba(0,0,0,.8))}
+svg.decal{width:100px;height:100px;overflow:visible}
+.tag{padding:7px 13px;border-radius:12px;font-weight:800;font-size:1rem;color:#111;background:#fff;white-space:nowrap}
+.tag s{text-decoration-thickness:2px;font-size:1.1rem}
+@keyframes slap{from{opacity:0;transform:rotate(calc(var(--r) - 14deg)) scale(1.7)}to{opacity:1;transform:rotate(var(--r)) scale(1)}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="g-mic"><rect x="36" y="6" width="28" height="50" rx="14"/><path d="M22 44a28 28 0 0 0 56 0M50 72v16M32 90h36"/></g>
+    <path id="g-wave" d="M12 50v0M30 34v32M46 12v76M62 30v40M78 20v60M92 46v8"/>
+    <polygon id="g-bolt" points="58,4 20,56 46,56 38,96 80,40 54,40"/>
+    <polygon id="g-star" points="50,6 61.2,34.6 91.9,36.4 68.1,55.9 75.9,85.6 50,69 24.1,85.6 31.9,55.9 8.2,36.4 38.8,34.6"/>
+  </defs>
+</svg>
+<main>
+
+<!-- Welcome / calibration -->
+<section id="welcome">
+  <div class="hero">
+    <svg class="decal" style="left:6%;top:18px;width:104px;height:104px;--r:-12deg;--i:1" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-mic" fill="none" stroke="#fff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+      <use href="#g-mic" fill="none" stroke="#ff5a6e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <svg class="decal" style="left:37%;top:42px;width:94px;height:94px;--r:7deg;--i:2" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-wave" fill="none" stroke="#fff" stroke-width="19" stroke-linecap="round"/>
+      <use href="#g-wave" fill="none" stroke="#3ee0b0" stroke-width="9" stroke-linecap="round"/>
+    </svg>
+    <svg class="decal" style="right:7%;top:10px;width:92px;height:92px;--r:14deg;--i:3" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-bolt" fill="#fff" stroke="#fff" stroke-width="16" stroke-linejoin="round"/>
+      <use href="#g-bolt" fill="#ffd23f" stroke="#ffd23f" stroke-width="3" stroke-linejoin="round"/>
+    </svg>
+    <span class="decal tag" style="left:7%;top:150px;--r:-9deg;--i:4" aria-hidden="true"><s>um</s></span>
+    <span class="decal tag" style="left:34%;top:162px;--r:5deg;--i:5;background:#ffd23f" aria-hidden="true">150 WPM</span>
+    <span class="decal tag" style="right:5%;top:128px;--r:-6deg;--i:6;background:#ff5a6e" aria-hidden="true">Say it clear</span>
+    <svg class="decal" style="right:9%;top:186px;width:58px;height:58px;--r:-10deg;--i:7" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-star" fill="#fff" stroke="#fff" stroke-width="16" stroke-linejoin="round"/>
+      <use href="#g-star" fill="#9b7bff" stroke="#9b7bff" stroke-width="3" stroke-linejoin="round"/>
+    </svg>
+    <h1>Speak clearly. Sound sure.</h1>
+  </div>
+  <p>This coach listens while you practice and shows your pace, filler words, voice energy, pauses, and rising endings.</p>
+  <p class="muted small">Your coach says hello, and you say hi back. That is how it tunes itself to your voice and your room.</p>
+  <div class="field">
+    <label for="nameIn">What should I call you?</label>
+    <input id="nameIn" type="text" autocomplete="given-name" maxlength="20" placeholder="Your first name">
+  </div>
+  <details>
+    <summary>Choose my coach's voice</summary>
+    <div class="field"><select id="voiceSel" aria-label="Coach voice"></select></div>
+    <button class="ghost" id="btnVoice" type="button">Hear this voice</button>
+  </details>
+  <div class="card">
+    <div class="status" id="calStatus" aria-live="polite">Tap the button, then allow the microphone.</div>
+    <div class="bar" id="calBarWrap" hidden><i id="calBar"></i></div>
+    <div class="row" id="calActions" hidden>
+      <button class="ghost" id="btnRetry">Try again</button>
+      <button class="primary" id="btnContinue">Continue</button>
+    </div>
+  </div>
+  <button class="primary" id="btnCal">Start and tune my mic</button>
+  <p class="muted small" style="margin-top:14px">Nothing is recorded or saved. Speech to text is done by your browser, and Chrome sends that speech to Google.</p>
+</section>
+
+<!-- Coach -->
+<section id="coach" hidden>
+  <h1>Practice</h1>
+  <div class="pills" id="pills"></div>
+  <div class="stage">
+    <div class="ring"></div>
+    <div class="orb" id="orb"></div>
+    <div class="hz" id="hz">Reach the dashed ring when you speak</div>
+  </div>
+  <div class="chips">
+    <span class="chip" id="chipPace">Pace: –</span>
+    <span class="chip" id="chipFill">Fillers: 0</span>
+    <span class="chip" id="chipTime">0:00</span>
+  </div>
+  <div class="card transcript" id="transcript" aria-live="off"><span class="muted">Your words appear here. Filler words are highlighted.</span></div>
+  <p class="small" id="coachNote" style="color:var(--warn)" hidden></p>
+  <button class="primary" id="btnGo">Start speaking</button>
+  <p class="muted small" style="margin-top:12px"><button class="ghost small" id="btnRecal" style="width:100%">Tune my mic again</button></p>
+</section>
+
+<!-- Report -->
+<section id="report" hidden>
+  <h1>Your report</h1>
+  <div class="card">
+    <div class="overall" id="overall">–</div>
+    <div class="muted" id="overallLabel">overall</div>
+  </div>
+  <div class="card" id="scores"></div>
+  <div class="card">
+    <h2>What to work on</h2>
+    <ul class="tips" id="tips"></ul>
+  </div>
+  <div class="card">
+    <h2>Your voice over time</h2>
+    <div class="chart" id="chart"></div>
+    <div class="legend">
+      <span>Green fill: volume</span><span>Blue line: pitch</span>
+      <span>Light green band: confident pause</span><span>Red band: pause over 2 seconds</span>
+      <span>Orange dot: rising ending</span>
+    </div>
+  </div>
+  <div class="card small muted" id="statline"></div>
+  <div class="row">
+    <button class="ghost" id="btnMode">Change mode</button>
+    <button class="primary" id="btnAgain">Practice again</button>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Config ---------- */
+var MODES = {
+  sales:     {label:"Sales call",      wpm:[140,170], fillers:3, uptalk:"strict"},
+  pitch:     {label:"Pitch",           wpm:[130,160], fillers:3, uptalk:"strict"},
+  "public":  {label:"Public speaking", wpm:[110,150], fillers:4, uptalk:"relaxed"},
+  interview: {label:"Interview",       wpm:[120,160], fillers:3, uptalk:"relaxed"}
+};
+var FILLERS = ["you know","sort of","kind of","i mean","basically","actually","like","um","uh","ah","er","umm","uhh"];
+var FILLER_RE = new RegExp("\\b("+FILLERS.join("|")+")\\b","gi");
+
+/* ---------- State ---------- */
+var mode = "sales";
+var cal = {noiseFloor:0.005, speechLevel:0.1, silence:0.015, ok:true, tip:""};
+var ctx=null, stream=null, analyser=null, buf=null, timer=null, frames=[], t0=0, wakeLock=null;
+var running=false, rec=null, finalText="", interimText="", recOff=false, recError="", liveStart=0, paceTimer=null;
+var voices=[], voiceName=lsGet("voice"), userName=lsGet("name");
+
+/* ---------- Helpers ---------- */
+function $(id){return document.getElementById(id);}
+function show(id){["welcome","coach","report"].forEach(function(s){$(s).hidden = (s!==id);}); document.documentElement.classList.toggle("front", id==="welcome"); window.scrollTo(0,0);}
+function esc(s){return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function clamp(n){return Math.max(0,Math.min(100,Math.round(n)));}
+function median(a){if(!a.length)return 0;var s=a.slice().sort(function(x,y){return x-y;});return s[Math.floor(s.length/2)];}
+function pct(a,p){if(!a.length)return 0;var s=a.slice().sort(function(x,y){return x-y;});return s[Math.floor(p*(s.length-1))];}
+function lsGet(k){try{return localStorage.getItem("coach_"+k)||"";}catch(e){return "";}}
+function lsSet(k,v){try{localStorage.setItem("coach_"+k,v);}catch(e){}}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+/* ---------- Pitch ---------- */
+function detectPitch(b,sr){
+  var minLag=Math.floor(sr/400), maxLag=Math.floor(sr/70), c0=0, i, lag;
+  for(i=0;i<b.length;i++) c0+=b[i]*b[i];
+  if(c0<=0) return null;
+  var best=0, bl=-1;
+  for(lag=minLag;lag<maxLag;lag++){
+    var c=0;
+    for(i=0;i<b.length-lag;i++) c+=b[i]*b[i+lag];
+    if(c>best){best=c;bl=lag;}
+  }
+  return (bl>0 && best/c0>0.45) ? sr/bl : null;
+}
+
+/* ---------- Microphone ---------- */
+async function openMic(){
+  stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false}});
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state==="suspended") await ctx.resume();
+  analyser = ctx.createAnalyser(); analyser.fftSize=2048;
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  buf = new Float32Array(analyser.fftSize);
+  frames=[]; t0=performance.now();
+  timer=setInterval(tick,50);
+}
+function closeMic(){
+  clearInterval(timer); timer=null;
+  if(stream){stream.getTracks().forEach(function(t){t.stop();}); stream=null;}
+  if(ctx){ctx.close(); ctx=null;}
+}
+function tick(){
+  analyser.getFloatTimeDomainData(buf);
+  var s=0,i;
+  for(i=0;i<buf.length;i++) s+=buf[i]*buf[i];
+  var volume=Math.sqrt(s/buf.length);
+  var pitch = volume>Math.max(cal.silence*1.2,0.004) ? detectPitch(buf,ctx.sampleRate) : null;
+  var f={t:performance.now()-t0, volume:volume, pitch:pitch};
+  frames.push(f);
+  onFrame(f);
+}
+function onFrame(f){
+  var ref = Math.max(cal.speechLevel,0.02);
+  var lvl = Math.min(1.25, f.volume/ref);
+  var orb=$("orb");
+  if(!$("coach").hidden){
+    orb.style.transform="scale("+(0.35+lvl*0.65).toFixed(3)+")";
+    $("hz").textContent = f.pitch ? Math.round(f.pitch)+" Hz" : "Reach the dashed ring when you speak";
+  }
+  if(!$("calBarWrap").hidden){
+    $("calBar").style.width = Math.min(100,(f.volume/0.15)*100)+"%";
+  }
+}
+
+/* ---------- Calibration ---------- */
+function computeCal(fr){
+  var v=fr.map(function(f){return f.volume;});
+  if(v.length<30) return {noiseFloor:0.005,speechLevel:0.1,silence:0.015,ok:false,tip:"I didn't hear anything. Check that your mic is on and try again."};
+  var noise=pct(v,0.1), speech=pct(v,0.9);
+  var silence=Math.max(noise*2.5, speech*0.1, 0.006);
+  var tip="";
+  if(speech<0.03) tip="You sound quiet. Move closer to the phone and try again.";
+  else if(speech<noise*3) tip="Your room is noisy. Try a quieter spot and try again.";
+  else if(speech>0.7) tip="You're very loud for this mic. Hold the phone a bit farther away.";
+  return {noiseFloor:noise,speechLevel:speech,silence:silence,ok:!tip,tip:tip};
+}
+function loadVoices(){
+  if(!("speechSynthesis" in window)) return;
+  voices=speechSynthesis.getVoices().filter(function(v){return /^en/i.test(v.lang);});
+  var sel=$("voiceSel"); if(!sel) return;
+  var best=pickVoice(); sel.innerHTML="";
+  voices.forEach(function(v){
+    var o=document.createElement("option"); o.value=v.name; o.textContent=v.name+" ("+v.lang+")";
+    if(best && v.name===best.name) o.selected=true; sel.appendChild(o);
+  });
+}
+function rankVoice(v){
+  var n=v.name.toLowerCase(), r=0;
+  if(/natural|neural|enhanced|premium|wavenet|studio/.test(n)) r+=6;
+  if(/google/.test(n)) r+=3;
+  if(/en[-_]us/i.test(v.lang)) r+=2;
+  if(!v.localService) r+=1;
+  if(/compact|espeak/.test(n)) r-=6;
+  return r;
+}
+function pickVoice(){
+  var chosen=voices.filter(function(v){return v.name===voiceName;})[0];
+  if(chosen) return chosen;
+  return voices.slice().sort(function(a,b){return rankVoice(b)-rankVoice(a);})[0]||null;
+}
+function greeting(){
+  var n=userName;
+  var list = n ? [
+    "Hey "+n+"! Good to see you. How's it going today?",
+    "Hi "+n+"! Nice to hear from you. How are you doing?",
+    "Hello "+n+"! Ready to practice? How's your day so far?"
+  ] : [
+    "Hi there! How's it going today?",
+    "Hello! Great to meet you. How are you doing today?"
+  ];
+  return list[Math.floor(Math.random()*list.length)];
+}
+function speak(text){
+  return new Promise(function(resolve){
+    if(!("speechSynthesis" in window)){resolve();return;}
+    var done=false; function fin(){if(!done){done=true;resolve();}}
+    var u=new SpeechSynthesisUtterance(text);
+    var v=pickVoice(); if(v){u.voice=v; u.lang=v.lang;} else u.lang="en-US";
+    u.rate=0.96; u.pitch=1.02;
+    u.onend=fin; u.onerror=fin;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    setTimeout(fin,14000);
+  });
+}
+function waitForVoice(startIdx){
+  return new Promise(function(resolve){
+    var voiced=0, last=0, t00=performance.now();
+    var iv=setInterval(function(){
+      var fr=frames.slice(startIdx);
+      if(!fr.length) return;
+      var noise=pct(fr.map(function(f){return f.volume;}),0.1);
+      var thr=Math.max(noise*3,0.02), lf=fr[fr.length-1];
+      if(lf.volume>thr){voiced++; last=lf.t;}
+      if((voiced>=6 && lf.t-last>1000) || performance.now()-t00>11000){clearInterval(iv);resolve();}
+    },100);
+  });
+}
+function micError(e){
+  var denied = e && (e.name==="NotAllowedError"||e.name==="SecurityError");
+  $("calStatus").textContent = denied
+    ? "The microphone is blocked. Tap the lock icon next to the address, allow Microphone, then reload this page."
+    : "I couldn't open the microphone. Check that no other app is using it, then try again.";
+  $("btnCal").hidden=false; $("btnCal").textContent="Try again";
+}
+async function calibrate(){
+  userName=$("nameIn").value.trim(); lsSet("name",userName);
+  $("btnCal").hidden=true; $("calActions").hidden=true;
+  $("calStatus").textContent="Allow the microphone when your browser asks.";
+  try{ await openMic(); }catch(e){ micError(e); return; }
+  $("calBarWrap").hidden=false;
+  $("calStatus").textContent="Your coach is saying hello…";
+  await speak(greeting());
+  var startIdx=frames.length;
+  $("calStatus").textContent="Your turn. Say hi back and tell me how you're doing.";
+  await waitForVoice(startIdx);
+  cal=computeCal(frames.slice(startIdx));
+  closeMic();
+  $("calBarWrap").hidden=true;
+  var nm = userName ? ", "+userName : "";
+  var msg = cal.ok ? "Great to hear you"+nm+". I can hear you clearly." : cal.tip;
+  $("calStatus").textContent=msg;
+  speak(cal.ok ? "Wonderful, I can hear you clearly"+nm+". Let's get started." : cal.tip);
+  $("calActions").hidden=false;
+  $("btnContinue").textContent = cal.ok ? "Continue" : "Continue anyway";
+}
+
+/* ---------- Transcript ---------- */
+function fillerCount(text){var m=text.match(FILLER_RE);return m?m.length:0;}
+function renderTranscript(){
+  var text=finalText+interimText;
+  var el=$("transcript");
+  if(!text.trim()){el.innerHTML='<span class="muted">Your words appear here. Filler words are highlighted.</span>';return;}
+  el.innerHTML = esc(text).replace(FILLER_RE,function(m){return "<mark>"+m+"</mark>";});
+  el.scrollTop=el.scrollHeight;
+  $("chipFill").textContent="Fillers: "+fillerCount(finalText+interimText);
+}
+function startRec(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ recOff=true; note("Live transcript isn't available in this browser. Voice analysis still works, but pace and filler scores will be skipped."); return; }
+  rec=new SR(); rec.continuous=true; rec.interimResults=true; rec.lang="en-US";
+  rec.onresult=function(e){
+    var interim="";
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var r=e.results[i];
+      if(r.isFinal) finalText+=r[0].transcript+" "; else interim+=r[0].transcript;
+    }
+    interimText=interim; renderTranscript();
+  };
+  rec.onend=function(){ if(running && !recOff){ try{rec.start();}catch(e){} } };
+  rec.onerror=function(ev){
+    recError=ev.error;
+    if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ recOff=true; note("Transcript was blocked by the browser. Voice analysis continues."); }
+    else if(ev.error!=="no-speech" && ev.error!=="aborted"){ note("Transcript issue: "+ev.error+". Voice analysis continues."); }
+  };
+  try{rec.start();}catch(e){}
+}
+function stopRec(){ if(rec){ try{rec.stop();}catch(e){} rec=null; } }
+function note(t){var n=$("coachNote"); n.textContent=t; n.hidden=!t;}
+
+/* ---------- Session ---------- */
+function fmt(ms){var s=Math.floor(ms/1000);return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2);}
+async function begin(){
+  finalText=""; interimText=""; recOff=false; recError=""; note(""); renderTranscript();
+  $("chipFill").textContent="Fillers: 0"; $("chipPace").textContent="Pace: –"; $("chipTime").textContent="0:00";
+  try{ await openMic(); }catch(e){ note("I couldn't open the microphone. Allow it in your browser and try again."); return; }
+  running=true; liveStart=performance.now();
+  try{ if(navigator.wakeLock) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){}
+  startRec();
+  $("btnGo").textContent="Stop and see my report"; $("btnGo").className="stop";
+  $("btnRecal").hidden=true;
+  paceTimer=setInterval(function(){
+    var el=performance.now()-liveStart;
+    $("chipTime").textContent=fmt(el);
+    var words=finalText.trim().split(/\s+/).filter(Boolean).length;
+    if(el>8000 && words>3) $("chipPace").textContent="Pace: "+Math.round(words/(el/60000))+" WPM";
+    // If recognition grabbed the mic and the voice stream went flat, keep voice analysis alive
+    if(el>3500 && !recOff){
+      var recent=frames.slice(-40);
+      if(recent.length>=40 && recent.every(function(f){return f.volume<0.0002;})){
+        recOff=true; stopRec();
+        note("The transcript and voice meter can't share the mic on this phone, so I turned the transcript off. Pace and filler scores will be skipped.");
+      }
+    }
+  },1000);
+}
+function end(){
+  running=false; clearInterval(paceTimer); stopRec();
+  var fr=frames.slice(); closeMic();
+  if(wakeLock){try{wakeLock.release();}catch(e){} wakeLock=null;}
+  $("btnGo").textContent="Start speaking"; $("btnGo").className="primary"; $("btnRecal").hidden=false;
+  if(fr.length<60){ note("That was too short to score. Speak for at least a few seconds."); return; }
+  buildReport(fr, finalText+interimText);
+}
+
+/* ---------- Analysis ---------- */
+function findPauses(fr,sil){
+  var out=[], st=null, seenVoice=false;
+  fr.forEach(function(f){
+    if(f.volume<sil){ if(st===null && seenVoice) st=f.t; }
+    else{
+      seenVoice=true;
+      if(st!==null){
+        var ms=f.t-st;
+        if(ms>=300) out.push({start:st,ms:ms,kind: ms<400?"short":(ms<=1800?"strategic":"awkward")});
+        st=null;
+      }
+    }
+  });
+  return out;
+}
+function findUptalk(fr,sil){
+  var phrases=[], cur=[], quiet=0;
+  fr.forEach(function(f){
+    if(f.volume<sil){ quiet++; if(quiet>=8 && cur.length){phrases.push(cur);cur=[];} }
+    else{ quiet=0; cur.push(f); }
+  });
+  if(cur.length) phrases.push(cur);
+  var flagged=0,total=0,at=[];
+  phrases.forEach(function(p){
+    var ps=p.filter(function(f){return f.pitch;});
+    if(ps.length<12) return;
+    total++;
+    var tail=median(ps.slice(-5).map(function(f){return f.pitch;}));
+    var body=median(ps.slice(-20,-5).map(function(f){return f.pitch;}));
+    if(body && tail/body>1.15){flagged++; at.push(p[p.length-1].t/1000);}
+  });
+  return {flagged:flagged,total:total,ratio: total?flagged/total:0, at:at};
+}
+function score(fr,text){
+  var cfg=MODES[mode], sil=cal.silence;
+  var mins=Math.max((fr[fr.length-1].t)/60000,0.05);
+  var words=text.trim().split(/\s+/).filter(Boolean).length;
+  var haveText = !recOff && words>=5;
+  var wpm=words/mins, fc=fillerCount(text), fpm=fc/mins;
+  var pauses=findPauses(fr,sil);
+  var awkward=pauses.filter(function(p){return p.kind==="awkward";}).length;
+  var strategic=pauses.filter(function(p){return p.kind==="strategic";}).length;
+  var up=findUptalk(fr,sil);
+
+  var lo=cfg.wpm[0], hi=cfg.wpm[1];
+  var off = wpm<lo ? lo-wpm : (wpm>hi ? wpm-hi : 0);
+  var pace = haveText ? clamp(100-off*2) : null;
+  var clarity = haveText ? clamp(100-Math.max(0,fpm-cfg.fillers)*12-awkward*4) : null;
+
+  var pitches=fr.map(function(f){return f.pitch;}).filter(function(p){return !!p;});
+  var vols=fr.map(function(f){return f.volume;}).filter(function(v){return v>sil;});
+  var semis = pitches.length>10 ? 12*Math.log2(pct(pitches,0.9)/pct(pitches,0.1)) : 0;
+  var mean=vols.reduce(function(a,b){return a+b;},0)/(vols.length||1);
+  var sd=Math.sqrt(vols.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/(vols.length||1));
+  var energy = clamp((semis/8)*60 + (sd/(mean||1))*80);
+  var penalty = up.ratio*(cfg.uptalk==="strict"?70:45);
+  var confidence = clamp(85-penalty-awkward*5+Math.min(strategic,5)*3);
+
+  var list=[clarity,confidence,pace,energy].filter(function(x){return x!==null;});
+  var overall=clamp(list.reduce(function(a,b){return a+b;},0)/list.length);
+  return {scores:{clarity:clarity,confidence:confidence,pace:pace,energy:energy}, overall:overall,
+    stats:{wpm:Math.round(wpm),words:words,fillers:fc,fpm:fpm,awkward:awkward,strategic:strategic,up:up,semis:semis,mins:mins,haveText:haveText},
+    pauses:pauses};
+}
+function tips(r){
+  var cfg=MODES[mode], s=r.stats, out=[];
+  if(s.haveText){
+    if(s.wpm<cfg.wpm[0]) out.push("You spoke at "+s.wpm+" words a minute, which is slow. For "+cfg.label.toLowerCase()+", aim for "+cfg.wpm[0]+" to "+cfg.wpm[1]+". Cut the gaps between thoughts, not the pauses that land a point.");
+    else if(s.wpm>cfg.wpm[1]) out.push("You spoke at "+s.wpm+" words a minute, which is fast. Aim for "+cfg.wpm[0]+" to "+cfg.wpm[1]+". Take a breath at the end of each sentence.");
+    if(s.fpm>cfg.fillers) out.push("You used "+s.fillers+" filler words. When you feel one coming, stay silent for a beat instead. A quiet pause sounds more confident than \"um\".");
+  }
+  if(s.up.total>0 && s.up.ratio>0.3) out.push(s.up.flagged+" of "+s.up.total+" sentences ended on a rising tone, which can sound like a question. Let your voice drop on the last word of a statement.");
+  if(s.awkward>0) out.push(s.awkward+(s.awkward>1?" pauses ran":" pause ran")+" longer than 2 seconds. Keep a next line ready, or take a slow breath and keep going.");
+  if(r.scores.energy<50) out.push("Your voice stayed flat. Pick two or three key words per sentence and say them louder and higher.");
+  if(!out.length) out.push("Nice work. Your pace, tone, and pauses were steady. Try the same talk in a different mode to stretch yourself.");
+  if(!s.haveText) out.push("I didn't get enough transcript to score pace and fillers this time"+(recError?" (the browser reported: "+recError+")":"")+". Voice, pause, and ending-tone scores are still real.");
+  return out.slice(0,4);
+}
+
+/* ---------- Report ---------- */
+function chartSVG(fr,pauses,upAt){
+  var W=320,H=150,dur=fr[fr.length-1].t/1000;
+  var step=Math.max(1,Math.floor(fr.length/320)), pts=[], i;
+  for(i=0;i<fr.length;i+=step) pts.push(fr[i]);
+  var x=function(t){return (t/dur)*W;};
+  var vmax=Math.max.apply(null,pts.map(function(p){return p.volume;}).concat([0.01]));
+  var ps=pts.map(function(p){return p.pitch;}).filter(function(p){return !!p;});
+  var pmin=ps.length?Math.min.apply(null,ps):0, pmax=ps.length?Math.max.apply(null,ps):1;
+  var py=function(p){return H-14-((p-pmin)/Math.max(pmax-pmin,1))*(H-40);};
+  var bands=pauses.filter(function(p){return p.kind!=="short";}).map(function(p){
+    return '<rect class="'+(p.kind==="awkward"?"c-bad":"c-good")+'" x="'+x(p.start/1000).toFixed(1)+'" y="0" width="'+Math.max(2,x(p.ms/1000)).toFixed(1)+'" height="'+H+'"/>';
+  }).join("");
+  var area="M0,"+H+" "+pts.map(function(p){return "L"+x(p.t/1000).toFixed(1)+","+(H-(p.volume/vmax)*(H-24)).toFixed(1);}).join(" ")+" L"+W+","+H+" Z";
+  var path="", pen=false;
+  pts.forEach(function(p){
+    if(p.pitch){path+=(pen?"L":"M")+x(p.t/1000).toFixed(1)+","+py(p.pitch).toFixed(1)+" "; pen=true;} else pen=false;
+  });
+  var dots=upAt.map(function(t){return '<circle class="c-up" cx="'+x(t).toFixed(1)+'" cy="10" r="5"/>';}).join("");
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Volume and pitch over the session">'+bands+'<path class="c-vol" d="'+area+'"/><path class="c-pitch" d="'+path+'"/>'+dots+'</svg>';
+}
+var LABELS=[["clarity","Clarity","Few fillers and long pauses"],["confidence","Confidence","Steady endings, deliberate pauses"],["pace","Pace","Words per minute for this mode"],["energy","Energy","Variety in pitch and volume"]];
+function buildReport(fr,text){
+  var r=score(fr,text);
+  $("overall").textContent=r.overall;
+  $("overallLabel").textContent="out of 100 · "+MODES[mode].label;
+  $("scores").innerHTML=LABELS.map(function(l){
+    var v=r.scores[l[0]];
+    return '<div class="score"><div class="top"><span>'+l[1]+'</span><span>'+(v===null?"Not scored":v)+'</span></div><div class="bar"><i style="width:'+(v===null?0:v)+'%"></i></div><div class="hint">'+l[2]+'</div></div>';
+  }).join("");
+  $("tips").innerHTML=tips(r).map(function(t){return "<li>"+esc(t)+"</li>";}).join("");
+  $("chart").innerHTML=chartSVG(fr,r.pauses,r.stats.up.at);
+  var s=r.stats;
+  $("statline").textContent=(s.haveText?s.wpm+" words a minute, "+s.fillers+" filler words. ":"")+
+    s.strategic+" confident pauses, "+s.awkward+" long pauses. "+s.up.flagged+" of "+s.up.total+" sentences ended on a rising tone. Pitch range: "+s.semis.toFixed(1)+" semitones.";
+  show("report");
+}
+
+/* ---------- Wiring ---------- */
+function buildPills(){
+  var box=$("pills"); box.innerHTML="";
+  Object.keys(MODES).forEach(function(k){
+    var b=document.createElement("button"); b.className="pill"; b.textContent=MODES[k].label;
+    b.setAttribute("aria-pressed", String(k===mode));
+    b.addEventListener("click",function(){ if(running) return; mode=k; buildPills(); });
+    box.appendChild(b);
+  });
+}
+$("btnCal").addEventListener("click",calibrate);
+$("nameIn").value=userName;
+if("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+$("voiceSel").addEventListener("change",function(){ voiceName=this.value; lsSet("voice",voiceName); });
+$("btnVoice").addEventListener("click",function(){ userName=$("nameIn").value.trim(); speak("Hi"+(userName?" "+userName:"")+"! This is how I sound. Pick the voice you like best."); });
+$("btnRetry").addEventListener("click",calibrate);
+$("btnContinue").addEventListener("click",function(){ buildPills(); show("coach"); });
+$("btnGo").addEventListener("click",function(){ running ? end() : begin(); });
+$("btnRecal").addEventListener("click",function(){ show("welcome"); $("btnCal").hidden=false; $("btnCal").textContent="Start and tune my mic"; $("calActions").hidden=true; $("calStatus").textContent="Tap the button, then allow the microphone."; });
+$("btnAgain").addEventListener("click",function(){ note(""); show("coach"); });
+$("btnMode").addEventListener("click",function(){ note(""); show("coach"); window.scrollTo(0,0); });
+document.addEventListener("visibilitychange",function(){ if(document.hidden && running) end(); });
+})();
+</script>
+</body>
+</html>
