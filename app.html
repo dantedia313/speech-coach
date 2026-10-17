@@ -1,0 +1,1642 @@
+<!doctype html>
+<html lang="en" class="front">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>Speech coach</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;--surface:#111;--surface2:#181818;--ink:#f5f5f5;--muted:#a6a6a6;--line:#2c2c2c;
+  --accent:#ffd23f;--accent-ink:#111;--wave:#3ee0b0;--coral:#ff5a6e;--violet:#9b7bff;--pitch:#8aa0ff;
+  --warn:#ffb057;--bad:#ff6b6b;--mark:#5a2a2e;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:17px;line-height:1.45}
+main{max-width:480px;margin:0 auto;padding:18px 18px calc(96px + env(safe-area-inset-bottom,0px))}
+h1{font-size:2rem;line-height:1.1;margin:6px 0 12px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.2rem;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px}
+.muted{color:var(--muted)}.small{font-size:.875rem}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:13px 18px;min-height:48px;color:var(--ink);background:var(--surface2)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+.primary{background:var(--accent);color:var(--accent-ink);font-weight:700;width:100%}
+.stop{background:var(--bad);color:#111;font-weight:700;width:100%}
+.ghost{background:transparent;border:1.5px solid var(--line)}
+.danger{background:transparent;border:1.5px solid var(--bad);color:var(--bad)}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.stack>*+*{margin-top:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin:12px 0}
+.status{min-height:2.9em}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:6px 0 12px}
+.bar>i{display:block;height:100%;width:0;background:var(--wave);transition:width .08s linear}
+.score .bar>i{background:var(--accent);transition:none}
+input[type=text],select{font:inherit;width:100%;min-height:48px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+label{display:block;font-weight:600;margin:0 0 6px}
+.field{margin:14px 0}
+details{margin:12px 0}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--muted)}
+.toggle{display:flex;align-items:flex-start;gap:12px}
+.toggle input{width:24px;height:24px;margin-top:3px;accent-color:var(--accent)}
+
+/* Front page */
+.hero{position:relative;height:340px;margin:0 -18px 16px}
+.hero h1{position:absolute;left:18px;right:18px;bottom:0;margin:0;font-size:2.7rem;line-height:1}
+.decal{position:absolute;--r:0deg;transform:rotate(var(--r));animation:slap .5s cubic-bezier(.2,1.5,.4,1) both;animation-delay:calc(var(--i)*100ms);filter:drop-shadow(0 6px 10px rgba(0,0,0,.8))}
+svg.decal{overflow:visible}
+.tag{padding:7px 13px;border-radius:12px;font-weight:800;font-size:1rem;color:#111;background:#fff;white-space:nowrap}
+.tag s{text-decoration-thickness:2px;font-size:1.1rem}
+@keyframes slap{from{opacity:0;transform:rotate(calc(var(--r) - 14deg)) scale(1.7)}to{opacity:1;transform:rotate(var(--r)) scale(1)}}
+
+/* Practice */
+.pills{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.pill{background:var(--surface);border:1.5px solid var(--line)}
+.pill[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:700}
+.stage{position:relative;display:grid;place-items:center;height:250px}
+.ring{position:absolute;width:190px;height:190px;border-radius:50%;border:2px dashed var(--muted);opacity:.7}
+.orb{width:190px;height:190px;border-radius:50%;background:var(--wave);transform:scale(.35);transition:transform .09s linear}
+.hz{position:absolute;bottom:4px;font-size:.95rem;color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:.9rem}
+.transcript{min-height:100px;max-height:170px;overflow-y:auto;font-size:1.05rem}
+.transcript mark{background:var(--mark);color:inherit;border-radius:6px;padding:0 4px;font-weight:600}
+.warn{color:var(--warn)}
+
+/* Report */
+.overall{font-size:3.4rem;font-weight:800;line-height:1}
+.score{margin:12px 0}
+.score .top{display:flex;justify-content:space-between;font-weight:600}
+.score .hint{font-size:.85rem;color:var(--muted)}
+.tips{padding-left:20px;margin:0}.tips li{margin:0 0 10px}
+.chart{overflow-x:auto}.chart svg{width:100%;min-width:300px;height:auto;display:block}
+.c-vol{fill:var(--wave);opacity:.4}.c-pitch{fill:none;stroke:var(--pitch);stroke-width:2}
+.c-good{fill:var(--wave);opacity:.2}.c-bad{fill:var(--bad);opacity:.28}.c-up{fill:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;color:var(--muted);margin-top:8px}
+.verdict{border-left:4px solid var(--accent)}
+.verdict.ok{border-color:var(--wave)}
+
+/* History + lists */
+.spark{width:100%;height:64px;display:block}
+.item{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:8px 0}
+.item .l1{display:flex;justify-content:space-between;font-weight:700}
+.item .l2{font-size:.85rem;color:var(--muted)}
+audio{width:100%;margin-top:8px}
+
+/* Tabs */
+#tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:#0a0a0a;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+#tabs button{flex:1;background:none;border-radius:0;color:var(--muted);font-weight:600;padding:14px 4px;min-height:54px}
+#tabs button[aria-current="page"]{color:var(--accent)}
+
+.ev{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--muted);margin-left:6px;white-space:nowrap}
+.phrase{font-style:italic;color:var(--ink);margin:2px 0}
+.lib h2{margin-bottom:4px}
+.quad{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 6px}
+.quad button{min-height:92px;border-radius:16px;color:#111;font-weight:800;font-size:1.6rem;text-align:left;padding:12px 14px;line-height:1.1}
+.quad button span{display:block;font-weight:600;font-size:.9rem;margin-top:4px}
+.axis{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-top:4px}
+.seg{display:flex;gap:6px;overflow-x:auto;margin:8px 0 12px}
+.seg button{flex:1 0 auto;padding:10px 12px;min-height:44px;background:var(--surface);border:1.5px solid var(--line);font-size:.95rem}
+.seg button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:700}
+.sletter{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;color:#111;font-weight:800;margin-right:8px;font-size:.95rem;vertical-align:middle}
+.disc-btn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--accent);padding:14px 16px}
+.disc-btn .dots{display:flex;gap:4px}
+.disc-btn .dots i{display:block;width:12px;height:12px;border-radius:50%}
+.mode-card .l1{font-size:1.15rem}
+@media (prefers-reduced-motion:reduce){.orb,.bar>i{transition:none}.decal{animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="g-mic"><rect x="36" y="6" width="28" height="50" rx="14"/><path d="M22 44a28 28 0 0 0 56 0M50 72v16M32 90h36"/></g>
+    <path id="g-wave" d="M12 50v0M30 34v32M46 12v76M62 30v40M78 20v60M92 46v8"/>
+    <polygon id="g-bolt" points="58,4 20,56 46,56 38,96 80,40 54,40"/>
+    <polygon id="g-star" points="50,6 61.2,34.6 91.9,36.4 68.1,55.9 75.9,85.6 50,69 24.1,85.6 31.9,55.9 8.2,36.4 38.8,34.6"/>
+  </defs>
+</svg>
+
+<main>
+
+<!-- FRONT -->
+<section id="front">
+  <div class="hero">
+    <svg class="decal" style="left:6%;top:18px;width:104px;height:104px;--r:-12deg;--i:1" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-mic" fill="none" stroke="#fff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+      <use href="#g-mic" fill="none" stroke="#ff5a6e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <svg class="decal" style="left:37%;top:42px;width:94px;height:94px;--r:7deg;--i:2" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-wave" fill="none" stroke="#fff" stroke-width="19" stroke-linecap="round"/>
+      <use href="#g-wave" fill="none" stroke="#3ee0b0" stroke-width="9" stroke-linecap="round"/>
+    </svg>
+    <svg class="decal" style="right:7%;top:10px;width:92px;height:92px;--r:14deg;--i:3" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-bolt" fill="#fff" stroke="#fff" stroke-width="16" stroke-linejoin="round"/>
+      <use href="#g-bolt" fill="#ffd23f" stroke="#ffd23f" stroke-width="3" stroke-linejoin="round"/>
+    </svg>
+    <span class="decal tag" style="left:7%;top:150px;--r:-9deg;--i:4" aria-hidden="true"><s>um</s></span>
+    <span class="decal tag" style="left:34%;top:162px;--r:5deg;--i:5;background:#ffd23f" aria-hidden="true">150 WPM</span>
+    <span class="decal tag" style="right:5%;top:128px;--r:-6deg;--i:6;background:#ff5a6e" aria-hidden="true">Say it clear</span>
+    <svg class="decal" style="right:9%;top:186px;width:58px;height:58px;--r:-10deg;--i:7" viewBox="-12 -12 124 124" aria-hidden="true">
+      <use href="#g-star" fill="#fff" stroke="#fff" stroke-width="16" stroke-linejoin="round"/>
+      <use href="#g-star" fill="#9b7bff" stroke="#9b7bff" stroke-width="3" stroke-linejoin="round"/>
+    </svg>
+    <h1>Speak clearly. Sound sure.</h1>
+  </div>
+  <p>Practice out loud and see your pace, filler words, voice energy, pauses, and rising endings.</p>
+  <p class="muted small">Your coach says hello and you say hi back. That is how it tunes itself to your voice and your room.</p>
+  <div class="field" id="nameField">
+    <label for="nameIn">What should I call you?</label>
+    <input id="nameIn" type="text" autocomplete="given-name" maxlength="20" placeholder="Your first name">
+  </div>
+  <details>
+    <summary>Choose my coach's voice</summary>
+    <div class="field"><select id="voiceSel" aria-label="Coach voice"></select></div>
+    <button class="ghost" id="btnVoice" type="button">Hear this voice</button>
+  </details>
+  <div class="card">
+    <div class="status" id="calStatus" aria-live="polite">Tap the button, then allow the microphone.</div>
+    <div class="bar" id="calBarWrap" hidden><i id="calBar"></i></div>
+    <div class="row" id="calActions" hidden>
+      <button class="ghost" id="btnRetry">Try again</button>
+      <button class="primary" id="btnContinue">Continue</button>
+    </div>
+  </div>
+  <button class="primary" id="btnQuick" hidden>Start</button>
+  <button class="primary" id="btnCal">Start and tune my mic</button>
+  <button class="ghost" id="btnInstallFront" style="width:100%;margin-top:10px" hidden>Install this app on my phone</button>
+  <p class="muted small" style="margin-top:14px">Nothing is recorded unless you choose to save a session. Live transcript uses your browser's speech service (Chrome sends that speech to Google). Private transcript in Settings keeps everything on your phone.</p>
+</section>
+
+<!-- MODES -->
+<section id="modes" hidden>
+  <h1>Choose a mode</h1>
+  <p class="muted">Pick what you're practicing today. You can switch anytime.</p>
+  <div id="modeCards"></div>
+</section>
+
+<!-- HOME -->
+<section id="home" hidden>
+  <h1 id="homeTitle">Sales call</h1>
+  <div id="homeSubs" hidden></div>
+  <p class="muted" id="homeNote"></p>
+  <div class="stack">
+    <button class="primary" id="btnHomePractice">Start practicing</button>
+    <button class="disc-btn" id="btnHomeDisc" hidden><span class="dots"><i style="background:#ff5a6e"></i><i style="background:#ffd23f"></i><i style="background:#3ee0b0"></i><i style="background:#9b7bff"></i></span><span><b>Client styles (DISC)</b><br><span class="small muted">Learn the four styles, spot them in sellers and buyers, and tune to each</span></span></button>
+    <button class="ghost" id="btnHomeDrills" style="width:100%">Drills</button>
+    <button class="ghost" id="btnHomeLib" style="width:100%">Word library</button>
+    <button class="ghost" id="btnHomeModes" style="width:100%">Change mode</button>
+  </div>
+</section>
+
+<!-- DISC -->
+<section id="disc" hidden>
+  <h1>Client styles</h1>
+  <div class="seg" id="discTabs"></div>
+  <div id="discBody"></div>
+  <button class="ghost" id="btnDiscBack" style="width:100%;margin-top:6px">Back</button>
+</section>
+
+<!-- PRACTICE -->
+<section id="practice" hidden>
+  <h1>Practice</h1>
+  <div class="pills" id="pills"></div>
+  <div class="card" id="promptCard"></div>
+  <div class="stage">
+    <div class="ring"></div>
+    <div class="orb" id="orb"></div>
+    <div class="hz" id="hz">Reach the dashed ring when you speak</div>
+  </div>
+  <div class="chips">
+    <span class="chip" id="chipPace">Pace: –</span>
+    <span class="chip" id="chipFill">Fillers: 0</span>
+    <span class="chip" id="chipTime">0:00</span>
+  </div>
+  <div class="card transcript" id="transcript" aria-live="off"></div>
+  <p class="small warn" id="coachNote" hidden></p>
+  <button class="primary" id="btnGo">Start speaking</button>
+</section>
+
+<!-- DRILLS -->
+<section id="drills" hidden>
+  <h1>Drills</h1>
+  <p class="muted">Short exercises that each train one skill. Pick one, speak, and the report tells you if you passed.</p>
+  <button class="ghost" id="btnLib" style="width:100%;margin-bottom:6px">Open the word library</button>
+  <div id="drillList"></div>
+</section>
+
+<!-- LIBRARY -->
+<section id="library" class="lib" hidden>
+  <h1>Word library</h1>
+  <p class="muted small">Every entry says how strong its evidence is. Pick a mode to see what matters there.</p>
+  <div class="pills" id="libPills"></div>
+  <div id="libBody"></div>
+  <button class="ghost" id="btnLibBack" style="width:100%;margin-top:6px">Back to drills</button>
+</section>
+
+<!-- HISTORY -->
+<section id="history" hidden>
+  <h1>Progress</h1>
+  <div id="histBody"></div>
+</section>
+
+<!-- SETTINGS -->
+<section id="settings" hidden>
+  <h1>Settings</h1>
+  <div class="card">
+    <div class="field" style="margin-top:0"><label for="setName">Your name</label>
+      <input id="setName" type="text" maxlength="20" placeholder="Your first name"></div>
+    <div class="field"><label for="setVoice">Coach voice</label><select id="setVoice"></select></div>
+    <button class="ghost" id="btnSetVoice" type="button" style="width:100%">Hear this voice</button>
+  </div>
+  <div class="card">
+    <button class="ghost" id="btnLiveAgain" style="width:100%;margin-bottom:12px" hidden>Try live transcript again on this phone</button>
+    <label class="toggle"><input type="checkbox" id="privToggle">
+      <span><b>Private transcript (beta)</b><br><span class="muted small">Turns your speech into text on this phone after you finish, so it never goes to Google. The first time it downloads about 40 MB. Pace and filler scores appear after a short wait.</span></span>
+    </label>
+  </div>
+  <div class="card">
+    <div class="field" style="margin-top:0"><label for="boostSel">Mic boost</label>
+      <select id="boostSel">
+        <option value="auto">Auto (recommended)</option>
+        <option value="1">Phone in hand (1×)</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+        <option value="8">Phone on the table (8×)</option>
+        <option value="12">12×</option>
+        <option value="16">16×</option>
+      </select></div>
+    <p class="muted small" id="boostInfo" style="margin:0">Auto sets the boost when you tune your mic. Tune again where you'll practice for the best result.</p>
+  </div>
+  <div class="card stack">
+    <h2>Your data</h2>
+    <p class="muted small" id="storeInfo">Sessions are saved on this phone only.</p>
+    <button class="ghost" id="btnExport" style="width:100%">Download a backup</button>
+    <label class="ghost" style="display:block;text-align:center;border:1.5px solid var(--line);border-radius:14px;padding:13px;margin:10px 0 0;cursor:pointer;font-weight:400">Restore from a backup
+      <input type="file" id="fileImport" accept="application/json" hidden></label>
+    <button class="danger" id="btnWipe" style="width:100%">Delete all my data</button>
+  </div>
+  <div class="card stack">
+    <button class="ghost" id="btnRecal" style="width:100%">Tune my mic again</button>
+    <button class="ghost" id="btnInstallSet" style="width:100%" hidden>Install this app on my phone</button>
+  </div>
+</section>
+
+<!-- BUSY -->
+<section id="busy" hidden>
+  <h1>One moment</h1>
+  <div class="card">
+    <div class="status" id="busyText">Working…</div>
+    <div class="bar"><i id="busyBar" style="width:0"></i></div>
+  </div>
+</section>
+
+<!-- REPORT -->
+<section id="report" hidden>
+  <h1>Your report</h1>
+  <div class="card verdict" id="verdict" hidden></div>
+  <div class="card"><div class="overall" id="overall">–</div><div class="muted" id="overallLabel">overall</div></div>
+  <div class="card" id="scores"></div>
+  <div class="card" id="wordsCard" hidden></div>
+  <div class="card verdict" id="complyCard" hidden></div>
+  <div class="card"><h2>What to work on</h2><ul class="tips" id="tips"></ul></div>
+  <div class="card" id="recCard" hidden></div>
+  <div class="card"><h2>Your voice over time</h2><div class="chart" id="chart"></div>
+    <div class="legend"><span>Green fill: volume</span><span>Blue line: pitch</span><span>Light green band: confident pause</span><span>Red band: pause over 2 seconds</span><span>Orange dot: rising ending</span></div></div>
+  <div class="card small muted" id="statline"></div>
+  <div class="row"><button class="ghost" id="btnHist">See progress</button><button class="primary" id="btnAgain">Practice again</button></div>
+</section>
+
+</main>
+
+<nav id="tabs" hidden aria-label="Main">
+  <button data-tab="home">Home</button>
+  <button data-tab="drills">Drills</button>
+  <button data-tab="history">History</button>
+  <button data-tab="settings">Settings</button>
+</nav>
+
+<script id="lang-engine">
+var CoachLang=(function(){
+"use strict";
+function clamp(n){return Math.max(0,Math.min(100,Math.round(n)));}
+function norm(t){return " "+String(t||"").toLowerCase().replace(/[\u2018\u2019]/g,"'").replace(/[^a-z0-9'%$.,?! -]/g," ").replace(/\s+/g," ").trim()+" ";}
+function cnt(res,t){var n=0;res.forEach(function(re){var m=t.match(re);if(m)n+=m.length;});return n;}
+function seen(res,t,max){var out=[];res.forEach(function(re){var m=t.match(re);if(m)m.forEach(function(x){x=x.trim();if(out.indexOf(x)<0&&out.length<(max||3))out.push(x);});});return out;}
+
+/* ---- phrase patterns (all run on normalized lowercase text) ---- */
+var HEDGES=[[/\bi think\b/g,0.5],[/\bi guess\b/g,1],[/\bmaybe\b/g,1],[/\bperhaps\b/g,1],[/\bprobably\b/g,0.5],[/\bkind of\b/g,1],[/\bsort of\b/g,1],[/\bhopefully\b/g,1],[/\bi hope\b/g,1],[/\bi'?ll try\b/g,1.5],[/\btry(?:ing)? to\b/g,1],[/\bi feel like\b/g,1],[/\ba little bit\b/g,0.5],[/\bjust\b/g,0.3],[/\bmight\b/g,0.5],[/\bi'?m not sure\b/g,1],[/\bor something\b/g,1]];
+var P={
+ commit:[/\bi will\b/g,/\bwe will\b/g,/\bi recommend\b/g,/\bi'?m (?:confident|certain|sure)\b/g,/\bdefinitely\b/g,/\babsolutely\b/g,/\bhere'?s (?:what|how|my)\b/g],
+ label:[/\bit (?:sounds|seems|looks|feels) like\b/g,/\b(?:sounds|seems|looks) like you\b/g,/\byou (?:seem|sound|look)\b/g,/\byou'?re (?:feeling|worried|concerned|frustrated|nervous|hoping|afraid|unsure|stretched)\b/g,/\bit'?s (?:frustrating|stressful|hard|tough|worrying)\b/g],
+ paraphrase:[/\bso what you'?re saying\b/g,/\bwhat i'?m hearing\b/g,/\bif i (?:understand|hear|got) (?:you |this |that )?(?:right|correctly)\b/g,/\blet me make sure\b/g,/\bso you'?re\b/g,/\bin other words\b/g],
+ confirm:[/\bdid i get that right\b/g,/\bis that right\b/g,/\bhave i got (?:that|this|it) right\b/g,/\bis that fair\b/g,/\bam i missing anything\b/g,/\bis that (?:accurate|correct)\b/g],
+ openQ:[/\bwhat (?:happens|would|is|are|do|does|did|matters|if|else|makes|made|kind|part)\b/g,/\bhow (?:does|do|would|did|much|many|is|are|has|have|can)\b/g,/\btell me (?:about|more)\b/g,/\bhelp me understand\b/g,/\bwalk me through\b/g,/\bwhy (?:is|do|does|did|are)\b/g],
+ impl:[/\bwhat happens (?:if|when)\b/g,/\bhow (?:does|would|do) (?:that|this|it) (?:affect|impact|change|hurt)\b/g,/\bwhat'?s the (?:impact|cost|effect)\b/g,/\bwhat does (?:that|this|it) cost\b/g,/\bhow much (?:time|money|revenue|does)\b/g],
+ need:[/\bwhat would (?:it|that) (?:mean|be worth)\b/g,/\bhow would (?:it|that|this) help\b/g,/\bwhat would (?:change|improve)\b/g],
+ reflect:[/\bi hear (?:you|that)\b/g,/\bthat makes sense\b/g,/\bfair (?:point|enough|concern)\b/g,/\b(?:a lot of|many|most) (?:people|customers|teams|clients)\b/g,/\bhelp me understand\b/g,/\bwhat (?:concerns|worries)\b/g,/\bwhat would need to be true\b/g,/\bon one hand\b/g,/\bat the same time\b/g,/\bi'?m curious\b/g],
+ directive:[/\byou (?:should|need to|have to|must|ought to)\b/g,/\byou'?d better\b/g],
+ argue:[/\bno,? but\b/g,/\bthat'?s not (?:true|right|correct)\b/g,/\byou'?re wrong\b/g,/\bactually,? (?:that|you)\b/g,/\blet me explain why\b/g,/\btrust me\b/g],
+ pressure:[/\blimited time\b/g,/\bact now\b/g,/\blast chance\b/g,/\bonly today\b/g,/\bwon'?t last\b/g,/\bdon'?t miss\b/g,/\bbefore it'?s too late\b/g],
+ contrast:[/\bnot (?:just |only )?\w+(?: \w+)?,? but\b/g,/\binstead of\b/g,/\brather than\b/g,/\bless \w+,? more\b/g,/\bthe difference between\b/g],
+ story:[/\blet me tell you\b/g,/\bi remember\b/g,/\bwhen i was\b/g,/\blast (?:year|week|month|summer|winter)\b/g,/\bonce\b/g,/\bimagine\b/g,/\bpicture this\b/g,/\bthere was a\b/g,/\bone day\b/g],
+ metaphor:[/\bit'?s (?:like|a bit like|kind of like)\b/g,/\blike a\b/g,/\bas if\b/g,/\bthink of (?:it|this) as\b/g],
+ rq:[/\bwhat if\b/g,/\bhave you ever\b/g,/\bwhy does (?:this|that|it) matter\b/g,/\bhow (?:can|do|would) we\b/g,/\bwhy do we\b/g],
+ list3:[/\b[a-z']+(?: [a-z']+)?, [a-z']+(?: [a-z']+)?,? (?:and|or) [a-z']+/g,/\b[a-z']+ and [a-z']+ and [a-z']+\b/g,/\b(?:three|3) (?:things|reasons|ways|steps|ideas|points|lessons|stories)\b/g,/\bfirst\b[\s\S]{0,200}\bsecond\b[\s\S]{0,200}\bthird\b/g],
+ nums:[/\b\d+(?:[.,]\d+)*\b/g],
+ evid:[/\bbecause\b/g,/\bfor (?:example|instance)\b/g,/\bwhich means\b/g,/\bso that\b/g,/\bdata (?:shows|says)\b/g,/\baccording to\b/g,/\bwe measured\b/g],
+ struct:[/\bproblem\b/g,/\bsolution\b/g,/\bmarket\b/g,/\btraction\b/g,/\bcustomers?\b/g,/\brevenue\b/g,/\bteam\b/g,/\bcompetit/g],
+ achieve:[/\bi (?:led|built|created|launched|increased|reduced|improved|delivered|managed|designed|saved|grew|won|developed|organized|negotiated|closed|ran|started|fixed|trained|owned)\b/g],
+ sit:[/\bthe situation\b/g,/\bat the time\b/g,/\bwe were facing\b/g,/\bthe (?:problem|challenge) was\b/g],
+ task:[/\bmy (?:job|role|task|goal)\b/g,/\bi was (?:responsible|asked|tasked)\b/g],
+ act:[/\bso i\b/g,/\bwhat i did\b/g,/\bi decided\b/g,/\bi started\b/g,/\bmy approach\b/g],
+ res:[/\bas a result\b/g,/\bwhich led to\b/g,/\bresulting in\b/g,/\bthe result\b/g,/\bin the end\b/g,/\bwe ended up\b/g]
+};
+var YOU={"you":1,"your":1,"you're":1,"yours":1,"you'll":1,"you've":1,"you'd":1};
+var ME={"i":1,"i'm":1,"i'll":1,"i've":1,"i'd":1,"my":1,"me":1,"mine":1,"myself":1};
+var WE={"we":1,"we're":1,"we'll":1,"we've":1,"our":1,"us":1,"let's":1,"ours":1};
+
+function flags(text){
+  var t=norm(text), clean=t.trim(), toks=clean?clean.split(" "):[], words=toks.length, F={t:t,words:words};
+  var hw=0,hc=0,hf=[];
+  HEDGES.forEach(function(h){var m=t.match(h[0]);if(m){hc+=m.length;hw+=m.length*h[1];if(hf.length<3)hf.push(m[0].trim());}});
+  F.hedgeCount=hc;F.hedgeDensity=words?hw/words*100:0;F.hedgeFound=hf;
+  F.tryUsed=/\b(?:i'?ll try|try(?:ing)? to|give it a shot|i'?ll see what i can do)\b/.test(t);
+  Object.keys(P).forEach(function(k){F[k]=cnt(P[k],t);});
+  F.qMarks=(t.match(/\?/g)||[]).length;
+  F.structDistinct=P.struct.filter(function(re){return re.test(t);}).length;
+  F.starDistinct=["sit","task","act","res"].filter(function(k){return F[k]>0;}).length;
+  var first=" "+toks.slice(0,30).join(" ")+" ";
+  F.labelEarly=cnt(P.label,first)+cnt(P.paraphrase,first);
+  var y=0,i=0,w=0;
+  toks.forEach(function(tok){tok=tok.replace(/[.,?!]+$/,"");if(YOU[tok])y++;else if(ME[tok])i++;else if(WE[tok])w++;});
+  F.you=y;F.me=i;F.we=w;
+  F.rhetTypes=[F.story>0?"story":"",F.contrast>0?"contrast":"",F.metaphor>0?"comparison":"",F.rq>0?"question":"",F.list3>0?"list of three":""].filter(Boolean);
+  return F;
+}
+
+var META={
+ committed:{label:"Committed language",ev:"research",tip:'Swap hedges for direct statements: "I recommend…" or "Here\'s what I\'d do." One "I think" is fine when you\'re credible. Stacking hedges is what costs you.'},
+ listening:{label:"Listening phrases",ev:"practice",tip:'Name what they feel before you respond: "It sounds like timing is a worry." Then check it: "Did I get that right?"'},
+ questions:{label:"Questions that dig",ev:"research",tip:'Ask a follow-up that digs: "What happens if that keeps going?" Follow-up questions make people like you and surface the real problem.'},
+ youFocus:{label:"Their side, not yours",ev:"research",tip:'Most of your words were about you. Ask about their priorities: "What matters most to you here?" Seeing their side wins more than feeling their feelings.'},
+ reservations:{label:"Handling reservations",ev:"mixed",tip:'When they push back, reflect before you answer: "A lot of people feel that way. Help me understand what worries you most." Skip "you should" and "no, but".'},
+ rhetoric:{label:"Rhetorical tools",ev:"research",tip:'Add a story opener, a contrast ("not just X, but Y"), or a list of three. Those were taught in the charisma training study.'},
+ prepared:{label:"Proof and specifics",ev:"research",tip:'Back each claim with a number or a "because." In the venture study, preparedness moved funding decisions more than passion did.'},
+ owned:{label:"Owning your results",ev:"mixed",tip:'Say "I" for what you personally did, with a result: "I cut onboarding from three weeks to three days." Keep every claim true.'},
+ structure:{label:"Answer structure",ev:"practice",tip:'Frame the answer as situation, what you did, and the result: "The situation was… I decided to… as a result…"'},
+ audience:{label:"Speaking to the room",ev:"practice",tip:'Talk to them: more "you" and "we," fewer "I." Let the room finish your sentences in their heads.'}
+};
+var RE_MODES=["listing","buyer","prospect","negotiate"];
+var MODE_COMPS={
+ listing:{committed:.2,listening:.2,questions:.15,youFocus:.15,reservations:.2,prepared:.1},
+ buyer:{committed:.2,listening:.2,questions:.25,youFocus:.15,reservations:.2},
+ prospect:{committed:.25,questions:.3,listening:.15,reservations:.2,youFocus:.1},
+ negotiate:{committed:.25,listening:.2,questions:.15,reservations:.2,prepared:.2},
+ sales:{committed:.2,listening:.2,questions:.25,youFocus:.15,reservations:.2},
+ pitch:{committed:.3,prepared:.3,rhetoric:.2,youFocus:.2},
+ "public":{committed:.25,rhetoric:.4,audience:.2,prepared:.15},
+ interview:{committed:.3,owned:.4,structure:.3}
+};
+var MODE_NOTE={
+ listing:"Listing appointments reward listening, sharp questions, handling reservations without arguing, and confident, data-backed pricing.",
+ buyer:"Buyer consultations reward discovery questions, explaining the agreement and your fee plainly, and handling reservations calmly.",
+ prospect:"Prospecting calls reward a tight opener, one good question, committed words, and staying calm when they push back.",
+ negotiate:"Negotiation rewards labeling emotions, asking before answering, proof behind your numbers, and never sounding rattled.",
+ sales:"Sales rewards listening, questions that dig, handling reservations without arguing, and committed words.",
+ pitch:"Pitches reward proof (numbers and reasons), committed words, a story or contrast, and an enthusiastic voice.",
+ "public":"Public speaking rewards rhetorical tools, speaking to the room, committed words, and vocal energy.",
+ interview:"Interviews reward owning true results, structured answers, and calm, committed delivery."
+};
+var CALC={
+ committed:function(F){
+  var dens=F.hedgeDensity,bonus=Math.min(10,F.commit*3);
+  var d=F.hedgeCount+" hedge"+(F.hedgeCount===1?"":"s")+" ("+dens.toFixed(1)+" per 100 words)"+(F.commit?", "+F.commit+" committed phrase"+(F.commit===1?"":"s"):"");
+  var tip=F.hedgeFound.length?'Swap "'+F.hedgeFound[0]+'" for a direct statement: "I recommend…" or "Here\'s what I\'d do." Stacking hedges is what costs you.':null;
+  if(F.tryUsed) tip='Replace "try" with a commitment: say "I will" or say no. '+(tip||"");
+  return {score:clamp(100-Math.max(0,dens-0.5)*20+bonus-(F.tryUsed?8:0)),detail:d+(F.tryUsed?', plus "try" language':""),tip:tip||META.committed.tip};
+ },
+ listening:function(F,mins){
+  var n=F.label+F.paraphrase+F.confirm;
+  return {score:clamp(n/(Math.max(mins,0.5)*2)*100),detail:n+" label, paraphrase, or check phrase"+(n===1?"":"s")};
+ },
+ questions:function(F,mins){
+  var q=Math.max(F.openQ,F.qMarks),dig=F.impl+F.need;
+  return {score:clamp(Math.min(q/(Math.max(mins,0.5)*3),1)*70+(dig>0?30:0)),detail:q+" question"+(q===1?"":"s")+", "+dig+" about cost or payoff"};
+ },
+ youFocus:function(F,mins,mode){
+  var tot=F.you+F.me+F.we; if(tot<5) return null;
+  var share=F.you/tot,target=(mode==="sales"||RE_MODES.indexOf(mode)>=0)?0.4:0.25;
+  return {score:clamp(share/target*100),detail:Math.round(share*100)+'% of your "you / I / we" words were about them'};
+ },
+ reservations:function(F){
+  var good=F.reflect+F.label,bad=F.directive+F.argue,pr=F.pressure;
+  if(good+bad+pr===0) return null;
+  return {score:clamp(40+good*20-bad*25-pr*15),detail:good+" reflecting phrase"+(good===1?"":"s")+", "+bad+" pushy phrase"+(bad===1?"":"s")+(pr?", "+pr+" pressure phrase"+(pr===1?"":"s"):""),tip:pr?"Drop the pressure lines. False urgency erodes trust and can break selling rules.":null};
+ },
+ rhetoric:function(F){
+  var n=F.rhetTypes.length;
+  return {score:clamp(n/4*100),detail:n?"Used: "+F.rhetTypes.join(", "):"No story, contrast, comparison, question, or list of three"};
+ },
+ prepared:function(F){
+  var s=Math.min(F.nums,4)*15+Math.min(F.evid,3)*8+Math.min(F.structDistinct,4)*4;
+  return {score:clamp(s),detail:F.nums+" number"+(F.nums===1?"":"s")+", "+F.evid+' "because" or example phrase'+(F.evid===1?"":"s")};
+ },
+ owned:function(F){
+  var s=Math.min(F.achieve,4)*18+Math.min(F.nums,3)*9;
+  return {score:clamp(s),detail:F.achieve+' "I did" statement'+(F.achieve===1?"":"s")+", "+F.nums+" number"+(F.nums===1?"":"s"),tip:F.we>F.me*2?'You said "we" far more than "I." Say "I" for what you personally did, with a result, and keep every claim true.':null};
+ },
+ structure:function(F){
+  var n=F.starDistinct;
+  return {score:clamp(n/3*100),detail:n+" of 4 answer parts (situation, task, action, result)"};
+ },
+ audience:function(F){
+  var tot=F.you+F.me+F.we; if(tot<5) return null;
+  var share=(F.you+F.we)/tot;
+  return {score:clamp(share/0.6*100),detail:Math.round(share*100)+'% of your pronouns pulled the room in ("you", "we")'};
+ }
+};
+function analyze(text,mins,mode){
+  var F=flags(text); if(F.words<15) return null;
+  var w=MODE_COMPS[mode]||MODE_COMPS.sales,comps=[],sum=0,ws=0;
+  Object.keys(w).forEach(function(id){
+    var r=CALC[id](F,mins,mode); if(!r) return;
+    comps.push({id:id,label:META[id].label,ev:META[id].ev,score:r.score,detail:r.detail,tip:r.tip||META[id].tip});
+    sum+=r.score*w[id];ws+=w[id];
+  });
+  if(!ws) return null;
+  return {score:clamp(sum/ws),comps:comps,F:F};
+}
+
+var ALL=["sales","listing","buyer","prospect","negotiate","pitch","public","interview"];
+var LIB=[
+ {id:"label",kind:"use",title:"Name the feeling",phrases:["It sounds like timing is a worry.","It seems like you've been burned before."],why:"Shows you heard the emotion and lowers defensiveness. Taught in FBI crisis negotiation as part of active listening and popularized by Voss. Controlled tests are limited.",ev:"practice",src:"FBI crisis negotiation; Voss",modes:["sales","pitch"]},
+ {id:"para",kind:"use",title:"Say it back, then check",phrases:["So what you're saying is reports take two days. Did I get that right?"],why:"Paraphrasing is one of the FBI's core active-listening skills. The goal is a sincere \"that's right\", which signals they feel understood. It also reveals what you missed.",ev:"practice",src:"FBI Behavioral Change Stairway Model; Voss",modes:["sales","pitch","interview"]},
+ {id:"fup",kind:"use",title:"Ask follow-up questions",phrases:["What made that the priority?","Tell me more about that."],why:"In three studies, people who asked more questions, especially follow-ups, were better liked.",ev:"research",src:"Huang et al. 2017",modes:["sales","pitch","interview"]},
+ {id:"impl",kind:"use",title:"Ask what it costs them",phrases:["What happens if that keeps going?","How does that affect your team?","What would it be worth if that were fixed?"],why:"The SPIN research (35,000+ calls) found top sellers in big sales helped buyers state the cost of their own problem. Gains reported by the training vendor.",ev:"practice",src:"Rackham / Huthwaite",modes:["sales"]},
+ {id:"persp",kind:"use",title:"Take their perspective",phrases:["What matters most to you here?","What would a good result look like from your side?"],why:"In negotiation experiments, perspective-taking found hidden deals and won more for the negotiator. Pure empathy did less.",ev:"research",src:"Galinsky et al. 2008",modes:["sales","pitch"]},
+ {id:"disc",kind:"use",title:"Tune to the buyer's style (DISC)",phrases:["Do you want the short version or the full detail?"],why:"Messages matched to a person's personality were rated as more persuasive in a published study. DISC itself is weakly validated, so treat your read as a guess and confirm it with a question.",ev:"mixed",src:"Hirsh et al. 2012; DISC field practice",modes:["sales"]},
+ {id:"refl",kind:"use",title:"Reflect a reservation before answering",phrases:["A lot of people feel that way. Help me understand what worries you most.","On one hand you want speed, and on the other you're worried about risk."],why:"Motivational interviewing treats pushback as ambivalence and softens it with reflection. Arguing tends to strengthen it. Evidence comes from counseling, so sales use is by analogy.",ev:"mixed",src:"Miller & Rollnick",modes:["sales"]},
+ {id:"commit",kind:"use",title:"Speak in commitments",phrases:["I will send it Friday.","I recommend the annual plan.","Here's what I'd do."],why:"Powerless speech (hedges, hesitations, tag questions) tends to reduce persuasion in a meta-analysis.",ev:"research",src:"Burrell & Koper 1998",modes:ALL},
+ {id:"hedgeok",kind:"use",title:"If you hedge, hedge with confidence",phrases:["I'm almost certain this will cut your costs."],why:"Newer studies find the type of hedge matters: strong-likelihood hedges with a personal view read as confident, especially from a credible speaker. A single \"I think\" isn't the problem. Stacking is.",ev:"mixed",src:"Hedging and persuasion studies",modes:ALL},
+ {id:"proof",kind:"use",title:"Back claims with numbers and reasons",phrases:["We grew 40% in six months because we cut onboarding to three days."],why:"In a lab experiment and a field study, investors' funding decisions followed perceived preparedness more than passion.",ev:"research",src:"Chen, Yao & Kotha 2009",modes:["pitch","public"]},
+ {id:"warm",kind:"use",title:"Sound enthusiastic and warm",phrases:["I'm excited about this because…"],why:"In a study of startup pitches, teams that sounded more enthusiastic and used warmer language were more likely to be funded. The authors warn this can bias investors, so pair it with proof.",ev:"mixed",src:"Hu & Ma 2021 (working paper)",modes:["pitch"]},
+ {id:"contrast",kind:"use",title:"Use a contrast",phrases:["Not just faster, but safer.","Instead of reports, you get answers."],why:"A charismatic leadership tactic. In a field training experiment, trained managers were rated as more charismatic.",ev:"research",src:"Antonakis et al. 2011",modes:["public","pitch"]},
+ {id:"three",kind:"use",title:"Use a list of three",phrases:["Faster, simpler, and cheaper."],why:"Another charismatic tactic from the same training study. It projects completeness and is easy to remember.",ev:"research",src:"Antonakis et al. 2011",modes:["public","pitch"]},
+ {id:"story",kind:"use",title:"Open with a story or image",phrases:["Let me tell you about last March.","Imagine your team on Monday morning."],why:"Stories and metaphors were among the trained charismatic tactics.",ev:"research",src:"Antonakis et al. 2011",modes:["public","pitch"]},
+ {id:"rq",kind:"use",title:"Ask a question the room answers in their heads",phrases:["What if every call ended with a yes?"],why:"Rhetorical questions create anticipation. Part of the trained charismatic tactics.",ev:"research",src:"Antonakis et al. 2011",modes:["public"]},
+ {id:"aud",kind:"use",title:"Speak to the room",phrases:["You've all felt this.","Let's picture it together."],why:"Inclusive \"you\" and \"we\" draw an audience in. Common speechwriting practice with limited direct testing.",ev:"practice",src:"Speechwriting practice",modes:["public"]},
+ {id:"owned",kind:"use",title:"Own your results, truthfully",phrases:["I led the move to a new system and cut errors by 30%."],why:"In a structured-interview meta-analysis, self-promotion was tied to higher ratings. Deceptive claims did worse in one study. Keep every claim true.",ev:"mixed",src:"Levashina et al. 2014; Barrick et al. 2009",modes:["interview"]},
+ {id:"star",kind:"use",title:"Answer in situation, action, result",phrases:["The situation was… I decided to… As a result…"],why:"Standard structure in structured interviews. This is practice, not tested here.",ev:"practice",src:"Interviewing practice",modes:["interview"]},
+ {id:"vpitch",kind:"voice",title:"Lower, steadier pitch",phrases:[],why:"In experiments, lower pitch raised people's confidence in their own thoughts and persuaded more than high pitch.",ev:"research",src:"Guyer et al.",modes:ALL},
+ {id:"vpause",kind:"voice",title:"Emphasis, varied pitch, and deliberate pauses",phrases:[],why:"In four experiments, louder, more varied, well-paused delivery was more persuasive, working through genuine confidence.",ev:"research",src:"Van Zant & Berger 2020",modes:ALL},
+ {id:"vend",kind:"voice",title:"Let statements fall at the end",phrases:[],why:"Falling intonation and a moderate speaking rate raised perceived confidence. Very fast or very slow speech lowered it.",ev:"research",src:"Guyer et al.",modes:ALL},
+ {id:"agreeask",kind:"use",title:"Agree, then ask a different question",phrases:["You probably can. Can I ask what made you invite me today?"],why:"Agreeing removes the push-back, and a new question moves the comparison off price. Common in sales training, including the clip you shared. Not tested in controlled studies, but it follows the same logic as reflecting instead of arguing.",ev:"practice",src:"Sales training; motivational interviewing",modes:RE_MODES},
+ {id:"tieback",kind:"use",title:"Tie it back to their own words",phrases:["Earlier you mentioned netting the most mattered more than saving on fees."],why:"Reminds them of the reasons they already gave. In motivational interviewing, people commit more to reasons they say themselves.",ev:"mixed",src:"Motivational interviewing (change talk)",modes:RE_MODES},
+ {id:"letdecide",kind:"use",title:"Let them make the call",phrases:["Based on everything we talked about, which option gives you the most confidence?"],why:"Hands the decision back. People tend to hold conclusions they reach themselves more firmly than ones they are told.",ev:"mixed",src:"Self-persuasion research",modes:RE_MODES},
+ {id:"defendfee",kind:"avoid",title:"Defending your fee line by line",phrases:["Well, my commission covers marketing, photos, and…"],why:"Justifying on the spot turns the talk into a price debate. Agree, ask, and tie it back to their goals first.",ev:"practice",src:"Sales training practice",modes:RE_MODES},
+ {id:"fairhousing",kind:"avoid",title:"Describing who a home or area is \"for\"",phrases:["It's a great family neighborhood.","Safe area, great schools."],why:"Fair housing rules make steering language risky. Describe the property and point clients to public data. General guidance, not legal advice: check with your broker.",ev:"rule",src:"Fair Housing Act guidance",modes:RE_MODES},
+ {id:"guarantee",kind:"avoid",title:"Guaranteeing a price or appraisal",phrases:["I guarantee we'll get you 600."],why:"Promises you can't control damage trust and can create liability. Give a range and the comparable sales behind it.",ev:"rule",src:"Licensing and advertising rules",modes:RE_MODES},
+ {id:"stack",kind:"avoid",title:"Stacked hedges",phrases:["I kind of think maybe we could possibly…"],why:"Hedges, hesitations, and tag questions together lowered persuasion and weakened strong arguments when listeners were paying attention.",ev:"research",src:"Blankenship & Holtgraves 2005",modes:ALL},
+ {id:"try",kind:"avoid",title:"\"I'll try\" and \"hopefully\"",phrases:["I'll try to send it.","Hopefully this works."],why:"Sales trainers say it signals low commitment. I found no controlled study, so treat this as practice.",ev:"practice",src:"Sales training practice",modes:ALL},
+ {id:"tag",kind:"avoid",title:"Tag questions",phrases:["…, right?  …, you know?"],why:"Effects depend on context, but tag questions weakened strong arguments in some studies.",ev:"mixed",src:"Blankenship & Holtgraves 2005",modes:ALL},
+ {id:"dir",kind:"avoid",title:"\"You should\" to a hesitant person",phrases:["You need to decide today."],why:"In motivational interviewing, pushing against hesitation tends to strengthen it.",ev:"mixed",src:"Miller & Rollnick",modes:["sales"]},
+ {id:"arg",kind:"avoid",title:"Correcting them head-on",phrases:["No, but… That's not true."],why:"Practitioners advise reflecting first. This follows the same logic as motivational interviewing and is not directly tested in sales.",ev:"practice",src:"Voss; motivational interviewing",modes:["sales"]},
+ {id:"press",kind:"avoid",title:"Pressure, threats, and false urgency",phrases:["Last chance!","Only today."],why:"In interrogation studies, accusatorial pressure raised false confessions and gave no better information than rapport-based questioning. Deceptive high-pressure selling also draws regulators' attention.",ev:"research",src:"Meissner et al. 2014; FTC cases",modes:ALL}
+];
+LIB.forEach(function(e){var out=[];e.modes.forEach(function(m){(m==="sales"?["sales"].concat(RE_MODES):(m==="pitch"?["pitch","listing"]:[m])).forEach(function(x){if(out.indexOf(x)<0)out.push(x);});});e.modes=out;});
+["agreeask","tieback","letdecide","defendfee"].forEach(function(id){LIB.forEach(function(e){if(e.id===id&&e.modes.indexOf("sales")<0)e.modes.unshift("sales");});});
+return {analyze:analyze,flags:flags,LIB:LIB,MODE_NOTE:MODE_NOTE,MODE_COMPS:MODE_COMPS,RE_MODES:RE_MODES,EV:{research:"Research-backed",practice:"Field practice",mixed:"Mixed evidence",rule:"Legal guardrail"}};
+})();
+
+</script>
+<script>
+(function(){
+"use strict";
+
+/* ================= Config ================= */
+const MODES = {
+  listing:   {label:"Listing appointment",  wpm:[130,160], fillers:3, uptalk:"strict", re:true},
+  buyer:     {label:"Buyer consultation",   wpm:[130,160], fillers:3, uptalk:"strict", re:true},
+  prospect:  {label:"Prospecting calls",    wpm:[140,170], fillers:3, uptalk:"strict", re:true},
+  negotiate: {label:"Offers & negotiation", wpm:[120,155], fillers:3, uptalk:"strict", re:true},
+  sales:     {label:"General sales",   wpm:[140,170], fillers:3, uptalk:"strict"},
+  pitch:     {label:"Pitch",           wpm:[130,160], fillers:3, uptalk:"strict"},
+  "public":  {label:"Public speaking", wpm:[110,150], fillers:4, uptalk:"relaxed"},
+  interview: {label:"Interview",       wpm:[120,160], fillers:3, uptalk:"relaxed"}
+};
+const SALES_SUB=["sales","listing","buyer","prospect","negotiate"];
+const TOP=["sales","pitch","public","interview"];
+const TOP_NOTE={sales:"Real estate and general sales: listing appointments, buyers, prospecting, and negotiation, plus DISC client styles.",pitch:"Pitches reward proof, committed words, a story or contrast, and an enthusiastic voice.","public":"Public speaking rewards rhetorical tools, speaking to the room, committed words, and vocal energy.",interview:"Interviews reward owning true results, structured answers, and calm, committed delivery."};
+const parentOf=m=>SALES_SUB.indexOf(m)>=0?"sales":m;
+const VISIBLE=()=>SALES_SUB.concat(["pitch","public","interview"]);
+const FILLERS = ["you know","sort of","kind of","i mean","basically","actually","like","um","uh","ah","er","umm","uhh"];
+const FILLER_RE = new RegExp("\\b("+FILLERS.join("|")+")\\b","gi");
+
+const PROMPTS = {
+  listing:["Open your listing appointment: build rapport and ask what matters most about the sale.","Walk the sellers through your recommended price using three recent sales.","Explain your marketing plan in about 60 seconds.","Ask for the listing: sum up what they told you and ask for the next step."],
+  buyer:["Open a buyer consultation and find out what's driving the move.","Explain the buyer agreement and your fee in plain words.","Ask three questions to learn their must-haves and deal-breakers.","Explain how you'll help them win in a multiple-offer situation."],
+  prospect:["Call a homeowner whose listing just expired. Open the call.","Call a for-sale-by-owner seller and ask for a 15-minute meeting.","Call a past client to check in and ask who they know who's thinking of moving.","Leave a 20-second voicemail that earns a callback."],
+  negotiate:["Present your buyer's offer to the listing agent.","Tell your sellers the inspection came back with repair requests.","Call your buyers to explain the appraisal came in low.","Counter an offer that came in under asking without losing the buyer."],
+  sales:["Open a call with a skeptical buyer."],
+  pitch:["Pitch your idea in 30 seconds."],
+  "public":["Open a talk with a short story that makes the audience care.","Explain a complicated idea so a ten-year-old would get it.","Give a closing call to action people will remember.","Thank a team and share one thing you learned this year."],
+  interview:["Tell me about yourself.","Describe a time you handled a conflict at work.","What's your biggest strength, and what weakness are you working on?","Why do you want this role?"]
+};
+
+const DRILLS = [
+  {id:"label", mode:"listing", title:"Label the worry", goal:"Name the feeling before you say anything about yourself. Start with \"It sounds like…\".",
+   buyer:"Honestly, we're not sure this is the right time to sell.", prompts:["Label what they feel, then ask what's behind it."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.labelEarly>=1 && c.F.directive===0);}},
+  {id:"thatsright", mode:"listing", title:"Earn a \"that's right\"", goal:"Summarize their situation in your own words, then ask if you got it right.",
+   buyer:"We bought here twelve years ago, the kids are gone, the stairs are getting hard, and we want to be near our grandkids. But we don't want to give the house away.", prompts:["Summarize what they told you, then ask: \"Did I get that right?\""],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.paraphrase>=1 && c.F.confirm>=1);}},
+  {id:"implication", mode:"listing", title:"Ask what overpricing costs them", goal:"Ask two questions that help them see the cost of pricing too high. Do not pitch.",
+   buyer:"We want to price it high and see what happens. We can always come down.", prompts:["Ask questions like: \"What happens if it sits for 60 days?\" and \"How would that affect your move?\""],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.impl>=2 && !/\b(?:our (?:marketing|brokerage|team)|i offer|we offer)\b/.test(c.F.t));}},
+  {id:"numbers", mode:"listing", title:"Price it with proof", goal:"Recommend a price and back it with at least three numbers from recent sales.",
+   prompts:["Explain your recommended price using three recent sales, their prices, and how long they took to sell."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.nums>=3);}},
+  {id:"commit", mode:"listing", title:"Commit to every word", goal:"Talk for at least 30 seconds with almost no hedges and no \"try\".",
+   prompts:["Present your marketing plan using only direct statements: \"I will…\", \"Your home will…\", \"Here's what happens…\""],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.hedgeDensity<=1 && !c.F.tryUsed && v.durationSec>=30);}},
+  {id:"endings", mode:"listing", title:"Land your sentences", goal:"End every statement on a falling tone: zero rising endings.",
+   prompts:["State six facts about the sellers' home, one at a time, with a pause after each. Let your voice fall on the last word."],
+   check:function(v){return v.stats.upTotal>=3?(v.stats.upFlagged===0):null;}},
+  {id:"mirror", mode:"buyer", title:"Mirror it", goal:"Repeat their last key words as a short, curious question, then stop. Keep it under 20 seconds.",
+   buyer:"We've worked with an agent before who disappeared after we signed.", prompts:["Mirror what they said in a calm, curious tone, then stay quiet."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.words<=45 && /disappear/.test(c.F.t));}},
+  {id:"reflect", mode:"buyer", title:"Reflect, don't fight", goal:"Reflect their concern, then ask one question. No \"you should\" and no \"but\".",
+   buyer:"Why should we pay you when the listing agent can just write up our offer?", prompts:["Reflect first, then ask what matters most to them in this purchase."],
+   check:function(v,c){return !v.stats.haveText?null:((c.F.reflect+c.F.label)>=1 && Math.max(c.F.openQ,c.F.qMarks)>=1 && c.F.directive===0 && c.F.argue===0);}},
+  {id:"pause", mode:"buyer", title:"Own the pause", goal:"Use at least 3 confident pauses and no pause longer than 2 seconds.",
+   prompts:["Explain how you'll help them win in a multiple-offer situation. Pause for one full second after each key point."],
+   check:function(v){return v.stats.strategic>=3 && v.stats.awkward===0;}},
+  {id:"filler", mode:"prospect", title:"Filler-free opener", goal:"Open the call for at least 30 seconds with 2 or fewer filler words.",
+   prompts:["Call a homeowner whose listing just expired. Open the call and ask one question."],
+   check:function(v){return !v.stats.haveText?null:(v.durationSec>=30 && v.stats.fillers<=2);}},
+  {id:"pace", mode:"prospect", title:"Hit your pace", goal:"Read the script and land inside the pace target for prospecting (140 to 170 words a minute).",
+   prompts:["Read this out loud: \"Hi, this is your name with your brokerage. I saw your home came off the market today, and I'm calling with one question. If it had sold, where were you planning to move? I help sellers in this neighborhood figure out what went wrong, and fix it.\""],
+   check:function(v){return v.scores.pace===null?null:v.scores.pace>=85;}},
+  {id:"voicemail", mode:"prospect", title:"20-second voicemail", goal:"Leave a voicemail between 12 and 30 seconds with a pace score of 75 or higher.",
+   prompts:["Leave a voicemail for a past client that gives them a reason to call you back."],
+   check:function(v){if(v.scores.pace===null) return null; return v.durationSec>=12 && v.durationSec<=30 && v.scores.pace>=75;}},
+  {id:"labelneg", mode:"negotiate", title:"Calm the other agent", goal:"Label their emotion first, then ask one question. No defending your offer.",
+   buyer:"My sellers are offended by your offer. Honestly, I'm not sure why we're even talking.", prompts:["Label it, then ask what would make a counter worth their time."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.labelEarly>=1 && Math.max(c.F.openQ,c.F.qMarks)>=1 && c.F.argue===0);}},
+  {id:"repairs", mode:"negotiate", title:"Ask before you answer", goal:"Ask at least two questions before offering anything.",
+   buyer:"The buyers want fifteen thousand in repairs or they walk.", prompts:["Find out what really matters to them before you give an answer."],
+   check:function(v,c){return !v.stats.haveText?null:(Math.max(c.F.openQ,c.F.qMarks)>=2 && !/\b(?:we'?ll (?:give|do|cover)|my sellers will)\b/.test(c.F.t));}},
+  {id:"tools3", mode:"public", title:"Story, contrast, and three", goal:"In about 60 seconds, use a story opener, one contrast, and one list of three.",
+   prompts:["Talk about a change you want to see. Open with a story, say \"not X, but Y\", and name three reasons."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.story>=1 && c.F.contrast>=1 && c.F.list3>=1);}},
+  {id:"energy", mode:"public", title:"Turn up the energy", goal:"Reach an energy score of 70 or higher.",
+   prompts:["Tell the story of the best day of your year. Stress the key words, go louder on the exciting parts, and softer on the surprises."],
+   check:function(v){return v.scores.energy>=70;}},
+  {id:"yourself", mode:"interview", title:"Tell me about yourself", goal:"Speak 55 to 95 seconds with 3 or fewer fillers and no long pauses.",
+   prompts:["Tell me about yourself: who you are, what you've done, and what you want next."],
+   check:function(v){if(!v.stats.haveText) return null; return v.durationSec>=55 && v.durationSec<=95 && v.stats.fillers<=3 && v.stats.awkward===0;}},
+  {id:"ownwins", mode:"interview", title:"Own your wins", goal:"Tell three true \"I did\" stories, with at least one number.",
+   prompts:["Describe three things you personally led or improved, and the result of each."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.achieve>=3 && c.F.nums>=1);}},
+  {id:"star", mode:"interview", title:"Situation, action, result", goal:"Answer with at least three of the four parts: situation, task, action, result.",
+   prompts:["Describe a time you fixed something that was going wrong."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.starDistinct>=3);}}
+];
+DRILLS.push(
+  {id:"s-label", mode:"sales", title:"Label the worry", goal:"Name the feeling before you say anything about your product. Start with \"It sounds like…\".",
+   buyer:"Honestly, I'm not sure this is the right time for us.", prompts:["Label what they feel, then ask what's behind it."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.labelEarly>=1 && c.F.directive===0);}},
+  {id:"s-mirror", mode:"sales", title:"Mirror it", goal:"Repeat their last key words as a short, curious question, then stop. Keep it under 20 seconds.",
+   buyer:"We've been burned before by vendors who overpromise.", prompts:["Mirror what they said in a calm, curious tone, then stay quiet."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.words<=45 && /overpromis/.test(c.F.t));}},
+  {id:"s-implication", mode:"sales", title:"Ask what it costs them", goal:"Ask two questions that uncover what the problem costs. Do not pitch.",
+   buyer:"Our weekly reports take about two days to put together.", prompts:["Ask questions like: \"What happens when the numbers are late?\" and \"How does that affect your team?\""],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.impl>=2 && !/\b(?:our (?:product|solution|platform|tool)|we offer)\b/.test(c.F.t));}},
+  {id:"s-filler", mode:"sales", title:"Filler-free minute", goal:"Talk for at least 40 seconds with 2 or fewer filler words.",
+   prompts:["Explain what you sell and why a customer should care."],
+   check:function(v){return !v.stats.haveText?null:(v.durationSec>=40 && v.stats.fillers<=2);}},
+  {id:"p-commit", mode:"pitch", title:"Commit to every word", goal:"Talk for at least 30 seconds with almost no hedges and no \"try\".",
+   prompts:["Pitch your idea using only direct statements: \"I will…\", \"We do…\", \"Here is what happens…\""],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.hedgeDensity<=1 && !c.F.tryUsed && v.durationSec>=30);}},
+  {id:"p-numbers", mode:"pitch", title:"Numbers that prove it", goal:"Make three claims and back each one with a number or a \"because\".",
+   prompts:["Pitch your traction, your market, and your edge. Every claim gets a number."],
+   check:function(v,c){return !v.stats.haveText?null:(c.F.nums>=3);}},
+  {id:"p-pause", mode:"pitch", title:"Own the pause", goal:"Use at least 3 confident pauses and no pause longer than 2 seconds.",
+   prompts:["Pitch your idea. After each key point, pause for one full second before the next one."],
+   check:function(v){return v.stats.strategic>=3 && v.stats.awkward===0;}},
+  {id:"p-elevator", mode:"pitch", title:"Thirty-second pitch", goal:"Finish between 25 and 45 seconds with a pace score of 80 or higher.",
+   prompts:["Pitch your idea as if you only have one elevator ride."],
+   check:function(v){if(v.scores.pace===null) return null; return v.durationSec>=25 && v.durationSec<=45 && v.scores.pace>=80;}}
+);
+const OBJECTIONS=[
+  {id:"o-cheaper",mode:"sales",title:"\"I can get it cheaper somewhere else\"",line:"I can get this cheaper somewhere else.",hint:"The move from your video: \"You probably can.\" Pause. Then ask what they're really comparing, tie it back to what they told you, and let them decide."},
+  {id:"o-commission",mode:"listing",title:"\"Another agent offered 1%\"",line:"Another agent said she'd list our home for 1%.",hint:"Try: \"You probably can find someone for less. Can I ask what made you invite me today?\""},
+  {id:"o-zillow",mode:"listing",title:"\"Zillow says it's worth more\"",line:"Zillow says our house is worth fifty thousand more than your number."},
+  {id:"o-fsbo",mode:"listing",title:"\"We'll sell it ourselves\"",line:"We're going to try selling it ourselves first."},
+  {id:"o-spring",mode:"listing",title:"\"We'll wait for spring\"",line:"We'd rather wait until spring when the market picks up."},
+  {id:"o-think",mode:"listing",title:"\"We need to think about it\"",line:"We need to think about it before we sign anything."},
+  {id:"o-interview",mode:"listing",title:"\"We're interviewing other agents\"",line:"We're interviewing two other agents this week."},
+  {id:"o-neighbor",mode:"listing",title:"\"Our neighbor sold for more\"",line:"Our neighbor's house sold for way more than that."},
+  {id:"o-term",mode:"listing",title:"\"Only 60 days, cancel anytime\"",line:"We'll only sign for sixty days, and we want to be able to cancel anytime."},
+  {id:"o-agreement",mode:"buyer",title:"\"Why sign before seeing a house?\"",line:"Why do we have to sign something before you'll even show us a house?"},
+  {id:"o-fee",mode:"buyer",title:"\"We won't pay a buyer agent fee\"",line:"We don't want to pay a buyer agent fee. The seller should cover it."},
+  {id:"o-rates",mode:"buyer",title:"\"We'll wait for rates to drop\"",line:"We're going to wait until rates come down."},
+  {id:"o-zillowbuy",mode:"buyer",title:"\"We can find homes on Zillow\"",line:"We can find the houses ourselves on Zillow. Why do we need you?"},
+  {id:"o-rebate",mode:"buyer",title:"\"Another agent will rebate\"",line:"Another agent said she'd give us part of her commission back. Can you beat that?",hint:"Same move as the video: agree, ask, tie it back, and let them decide."},
+  {id:"o-lowball",mode:"buyer",title:"\"Let's offer way under asking\"",line:"Let's offer forty thousand under asking and see what happens."},
+  {id:"o-expired",mode:"prospect",title:"\"I'm done with agents\"",line:"My listing just expired and I'm done with agents."},
+  {id:"o-fsbo2",mode:"prospect",title:"\"I'm not paying a commission\"",line:"I'm not paying a commission. That's the whole point of selling it myself."},
+  {id:"o-notnow",mode:"prospect",title:"\"We're not selling right now\"",line:"We're not thinking about selling right now."},
+  {id:"o-happy",mode:"prospect",title:"\"We already have an agent\"",line:"We already have an agent we like."},
+  {id:"o-budge",mode:"negotiate",title:"\"The seller won't budge\"",line:"My seller won't come down a single dollar."},
+  {id:"o-appraisal",mode:"negotiate",title:"\"The appraisal came in low\"",line:"The appraisal came in twenty thousand low. What now?"},
+  {id:"o-highest",mode:"negotiate",title:"\"Highest and best by tonight\"",line:"We have multiple offers. Get me your highest and best by tonight."}
+];
+OBJECTIONS.forEach(function(o){
+  DRILLS.push({id:o.id,mode:o.mode,obj:true,title:"Objection: "+o.title,
+    goal:"Agree first, ask a different question, tie it back to what they told you, and let them decide. No defending.",
+    buyer:o.line,prompts:[o.hint||"Respond with the four moves: agree, ask, tie it back, let them decide."],check:function(){return null;}});
+});
+
+/* ================= Helpers ================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp = n => Math.max(0,Math.min(100,Math.round(n)));
+const median = a => {if(!a.length)return 0;const s=a.slice().sort((x,y)=>x-y);return s[Math.floor(s.length/2)];};
+const pct = (a,p) => {if(!a.length)return 0;const s=a.slice().sort((x,y)=>x-y);return s[Math.floor(p*(s.length-1))];};
+const pick = a => a[Math.floor(Math.random()*a.length)];
+function lsGet(k){try{return localStorage.getItem("coach_"+k)||"";}catch(e){return "";}}
+function lsSet(k,v){try{localStorage.setItem("coach_"+k,v);}catch(e){}}
+function fmt(ms){const s=Math.floor(ms/1000);return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2);}
+function fillerCount(t){const m=t.match(FILLER_RE);return m?m.length:0;}
+
+/* ================= State ================= */
+let mode="listing";
+let micGain=1, gainNode=null, calMeasuring=false, boostSetting=lsGet("boost")||"auto";
+let cal={noiseFloor:0.005,speechLevel:0.1,silence:0.015,ok:true,tip:""};
+let userName=lsGet("name"), voiceName=lsGet("voice"), privateMode=lsGet("private")==="1";
+let activeDrill=null, currentPrompt="";
+let audioCtx=null, stream=null, analyser=null, buf=null, timer=null, frames=[], t0=0, wakeLock=null;
+let running=false, rec=null, finalText="", interimText="", recOff=false, recError="", liveStart=0, paceTimer=null;
+let autoPrivate=false;
+let mediaRec=null, chunks=[], pendingRec=null, voices=[], deferredPrompt=null, curScreen="front";
+
+/* ================= Storage (IndexedDB) ================= */
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    if(!window.indexedDB) return rej(new Error("no indexedDB"));
+    const r=indexedDB.open("speech-coach",1);
+    r.onupgradeneeded=()=>{const d=r.result; d.createObjectStore("sessions",{keyPath:"id"}); d.createObjectStore("recs",{keyPath:"id"});};
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+async function tx(store,modeRW,fn){
+  const db=await dbOpen();
+  return new Promise((res,rej)=>{
+    const t=db.transaction(store,modeRW), st=t.objectStore(store), out=fn(st);
+    t.oncomplete=()=>{db.close(); res(out && "result" in out ? out.result : undefined);};
+    t.onerror=()=>{db.close(); rej(t.error);}; t.onabort=()=>{db.close(); rej(t.error);};
+  });
+}
+const idbAll=s=>tx(s,"readonly",st=>st.getAll());
+const idbKeys=s=>tx(s,"readonly",st=>st.getAllKeys());
+const idbGet=(s,k)=>tx(s,"readonly",st=>st.get(k));
+const idbPut=(s,v)=>tx(s,"readwrite",st=>st.put(v));
+const idbDel=(s,k)=>tx(s,"readwrite",st=>st.delete(k));
+const idbClear=s=>tx(s,"readwrite",st=>st.clear());
+
+async function saveSessionRecord(vm){
+  try{
+    await idbPut("sessions",vm);
+    if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
+  }catch(e){}
+}
+async function cleanupRecs(){
+  try{
+    const recs=(await idbAll("recs")).sort((a,b)=>b.date-a.date);
+    for(let i=0;i<recs.length;i++){
+      if(i>=5 || Date.now()-recs[i].date>30*864e5) await idbDel("recs",recs[i].id);
+    }
+  }catch(e){}
+}
+
+/* ================= Voice (text to speech) ================= */
+function loadVoices(){
+  if(!("speechSynthesis" in window)) return;
+  voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
+  const best=pickVoice();
+  ["voiceSel","setVoice"].forEach(id=>{
+    const sel=$(id); if(!sel) return; sel.innerHTML="";
+    voices.forEach(v=>{const o=document.createElement("option"); o.value=v.name; o.textContent=v.name+" ("+v.lang+")"; if(best&&v.name===best.name) o.selected=true; sel.appendChild(o);});
+  });
+}
+function rankVoice(v){
+  const n=v.name.toLowerCase(); let r=0;
+  if(/natural|neural|enhanced|premium|wavenet|studio/.test(n)) r+=6;
+  if(/google/.test(n)) r+=3;
+  if(/en[-_]us/i.test(v.lang)) r+=2;
+  if(!v.localService) r+=1;
+  if(/compact|espeak/.test(n)) r-=6;
+  return r;
+}
+function pickVoice(){
+  const chosen=voices.filter(v=>v.name===voiceName)[0];
+  if(chosen) return chosen;
+  return voices.slice().sort((a,b)=>rankVoice(b)-rankVoice(a))[0]||null;
+}
+function speak(text){
+  return new Promise(resolve=>{
+    if(!("speechSynthesis" in window)){resolve();return;}
+    let done=false; const fin=()=>{if(!done){done=true;resolve();}};
+    const u=new SpeechSynthesisUtterance(text);
+    const v=pickVoice(); if(v){u.voice=v;u.lang=v.lang;} else u.lang="en-US";
+    u.rate=0.96; u.pitch=1.02; u.onend=fin; u.onerror=fin;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+    setTimeout(fin,14000);
+  });
+}
+function greeting(){
+  const n=userName;
+  return pick(n ? [
+    "Hey "+n+"! Good to see you. How's it going today?",
+    "Hi "+n+"! Nice to hear from you. How are you doing?",
+    "Hello "+n+"! Ready to practice? How's your day so far?"
+  ] : [
+    "Hi there! How's it going today?",
+    "Hello! Great to meet you. How are you doing today?"
+  ]);
+}
+
+/* ================= Audio analysis ================= */
+function detectPitch(b,sr){
+  const minLag=Math.floor(sr/400), maxLag=Math.floor(sr/70); let c0=0,i,lag;
+  for(i=0;i<b.length;i++) c0+=b[i]*b[i];
+  if(c0<=0) return null;
+  let best=0,bl=-1;
+  for(lag=minLag;lag<maxLag;lag++){
+    let c=0; for(i=0;i<b.length-lag;i++) c+=b[i]*b[i+lag];
+    if(c>best){best=c;bl=lag;}
+  }
+  return (bl>0 && best/c0>0.45) ? sr/bl : null;
+}
+async function openMic(){
+  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false}});
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended") await audioCtx.resume();
+  analyser=audioCtx.createAnalyser(); analyser.fftSize=2048;
+  gainNode=audioCtx.createGain(); gainNode.gain.value=calMeasuring?1:micGain;
+  audioCtx.createMediaStreamSource(stream).connect(gainNode); gainNode.connect(analyser);
+  buf=new Float32Array(analyser.fftSize); frames=[]; t0=performance.now();
+  timer=setInterval(tick,50);
+}
+function closeMic(){
+  clearInterval(timer); timer=null;
+  if(stream){stream.getTracks().forEach(t=>t.stop()); stream=null;}
+  if(audioCtx){audioCtx.close(); audioCtx=null;}
+}
+function tick(){
+  analyser.getFloatTimeDomainData(buf);
+  let s=0; for(let i=0;i<buf.length;i++) s+=buf[i]*buf[i];
+  const volume=Math.sqrt(s/buf.length);
+  const pitch = volume>Math.max(cal.silence*1.2,0.004) ? detectPitch(buf,audioCtx.sampleRate) : null;
+  const f={t:performance.now()-t0,volume,pitch};
+  frames.push(f); onFrame(f);
+}
+function onFrame(f){
+  if(curScreen==="practice"){
+    const lvl=Math.min(1.25, f.volume/Math.max(cal.speechLevel,0.02));
+    $("orb").style.transform="scale("+(0.35+lvl*0.65).toFixed(3)+")";
+    $("hz").textContent = f.pitch ? Math.round(f.pitch)+" Hz" : "Reach the dashed ring when you speak";
+  }
+  if(!$("calBarWrap").hidden) $("calBar").style.width=Math.min(100,(f.volume/0.03)*100)+"%";
+}
+function startRecorder(){
+  chunks=[]; mediaRec=null;
+  if(!window.MediaRecorder||!stream) return;
+  try{
+    const mime=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus":(MediaRecorder.isTypeSupported("audio/mp4")?"audio/mp4":"");
+    mediaRec=new MediaRecorder(stream, mime?{mimeType:mime,audioBitsPerSecond:32000}:{});
+    mediaRec.ondataavailable=e=>{if(e.data&&e.data.size) chunks.push(e.data);};
+    mediaRec.start(1000);
+  }catch(e){mediaRec=null;}
+}
+function stopRecorder(){
+  return new Promise(res=>{
+    const r=mediaRec;
+    if(!r||r.state==="inactive") return res(null);
+    r.onstop=()=>{const b=new Blob(chunks,{type:r.mimeType||"audio/webm"}); chunks=[]; res(b.size?b:null);};
+    try{r.stop();}catch(e){res(null);}
+  });
+}
+
+/* ================= Calibration ================= */
+function computeCal(fr,baseNoise){
+  const v=fr.map(f=>f.volume);
+  if(v.length<30) return {noiseFloor:0.005,speechLevel:0.1,silence:0.015,gain:1,auto:1,ok:false,tip:"I didn't hear anything. Check that your mic is on and try again."};
+  const noise=(baseNoise!==undefined)?Math.min(baseNoise,pct(v,0.1)):pct(v,0.1), speech=pct(v,0.9);
+  if(speech<0.002) return {noiseFloor:0.005,speechLevel:0.1,silence:0.015,gain:1,auto:1,ok:false,tip:"I couldn't hear you. Check that nothing is covering the mic, then try again."};
+  const auto=Math.max(1,Math.min(16,0.12/speech));
+  const gain=boostSetting==="auto"?auto:parseFloat(boostSetting);
+  const N=noise*gain, S=speech*gain;
+  let tip="";
+  if(speech<noise*2.2) tip="Your room is noisy for this distance. Try somewhere quieter, or move the phone a little closer.";
+  return {noiseFloor:N,speechLevel:S,silence:Math.max(N*2.5,S*0.1,0.006),gain,auto,ok:!tip,tip};
+}
+function saveCal(){lsSet("cal",JSON.stringify(cal));}
+function applyBoost(){
+  const target=boostSetting==="auto"?(cal.auto||cal.gain||1):parseFloat(boostSetting);
+  const ratio=target/(cal.gain||1);
+  cal.noiseFloor*=ratio; cal.speechLevel*=ratio; cal.silence=Math.max(cal.noiseFloor*2.5,cal.speechLevel*0.1,0.006);
+  cal.gain=target; micGain=target; saveCal();
+}
+function waitForVoice(startIdx,baseNoise){
+  return new Promise(resolve=>{
+    let voiced=0,last=0; const t00=performance.now();
+    const iv=setInterval(()=>{
+      const fr=frames.slice(startIdx); if(!fr.length) return;
+      const noise=(baseNoise!==undefined)?baseNoise:pct(fr.map(f=>f.volume),0.1), thr=Math.max(noise*3,0.003), lf=fr[fr.length-1];
+      if(lf.volume>thr){voiced++; last=lf.t;}
+      if((voiced>=6 && lf.t-last>1000) || performance.now()-t00>11000){clearInterval(iv);resolve();}
+    },100);
+  });
+}
+function micError(e){
+  const denied=e&&(e.name==="NotAllowedError"||e.name==="SecurityError");
+  $("calStatus").textContent = denied
+    ? "The microphone is blocked. Tap the lock icon next to the address, allow Microphone, then reload this page."
+    : "I couldn't open the microphone. Check that no other app is using it, then try again.";
+  $("btnCal").hidden=false; $("btnCal").textContent="Try again";
+}
+async function calibrate(){
+  userName=$("nameIn").value.trim(); lsSet("name",userName);
+  if(userName) $("nameField").hidden=true;
+  $("btnCal").hidden=true; $("calActions").hidden=true;
+  $("calStatus").textContent="Allow the microphone when your browser asks.";
+  $("btnQuick").hidden=true;
+  calMeasuring=true;
+  try{await openMic();}catch(e){calMeasuring=false;micError(e);return;}
+  $("calBarWrap").hidden=false;
+  $("calStatus").textContent="Your coach is saying hello…";
+  await speak(greeting());
+  $("calStatus").textContent="Your turn. Say hi back and tell me how you're doing.";
+  const baseIdx=frames.length; await new Promise(r=>setTimeout(r,450));
+  const baseNoise=pct(frames.slice(baseIdx).map(f=>f.volume),0.5);
+  const startIdx=frames.length;
+  await waitForVoice(startIdx,baseNoise);
+  cal=computeCal(frames.slice(startIdx),baseNoise); calMeasuring=false; micGain=cal.gain||1;
+  if(cal.ok) saveCal();
+  closeMic(); $("calBarWrap").hidden=true;
+  const nm=userName?", "+userName:"";
+  const msg=cal.ok?"Great to hear you"+nm+". I can hear you clearly.":cal.tip;
+  $("calStatus").textContent=msg;
+  speak(cal.ok?"Wonderful, I can hear you clearly"+nm+". Let's get started.":cal.tip);
+  $("calActions").hidden=false;
+  $("btnContinue").textContent=cal.ok?"Continue":"Continue anyway";
+}
+
+/* ================= Live transcript (browser) ================= */
+function note(t){const n=$("coachNote"); n.textContent=t; n.hidden=!t;}
+function renderTranscript(){
+  const el=$("transcript");
+  if(privateMode||autoPrivate){el.innerHTML='<span class="muted">Your words are turned into text on this phone after you tap Stop, so nothing appears live.</span>';return;}
+  const text=finalText+interimText;
+  if(!text.trim()){el.innerHTML='<span class="muted">Your words appear here. Filler words are highlighted.</span>';return;}
+  el.innerHTML=esc(text).replace(FILLER_RE,m=>"<mark>"+m+"</mark>");
+  el.scrollTop=el.scrollHeight;
+  $("chipFill").textContent="Fillers: "+fillerCount(text);
+}
+function startRec(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){recOff=true; note("Live transcript isn't available in this browser. Voice analysis still works, but pace and filler scores will be skipped."); return;}
+  rec=new SR(); rec.continuous=true; rec.interimResults=true; rec.lang="en-US";
+  rec.onresult=e=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i]; if(r.isFinal) finalText+=r[0].transcript+" "; else interim+=r[0].transcript;}
+    interimText=interim; renderTranscript();
+  };
+  rec.onend=()=>{if(running&&!recOff){try{rec.start();}catch(e){}}};
+  rec.onerror=ev=>{
+    recError=ev.error;
+    if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){recOff=true; note("Transcript was blocked by the browser. Voice analysis continues.");}
+    else if(ev.error!=="no-speech"&&ev.error!=="aborted"){note("Transcript issue: "+ev.error+". Voice analysis continues.");}
+  };
+  try{rec.start();}catch(e){}
+}
+function stopRec(){if(rec){try{rec.stop();}catch(e){} rec=null;}}
+
+/* ================= Private transcript (Whisper in the browser) ================= */
+let asrPromise=null;
+function setBusy(text,pctNum){$("busyText").textContent=text; $("busyBar").style.width=(pctNum||0)+"%";}
+function getASR(){
+  if(!asrPromise){
+    asrPromise=(async()=>{
+      const m=await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2");
+      m.env.allowLocalModels=false;
+      return await m.pipeline("automatic-speech-recognition","Xenova/whisper-tiny.en",{
+        progress_callback:p=>{
+          if(p&&p.status==="progress"&&typeof p.progress==="number") setBusy("Downloading the private transcriber (one time only)… "+Math.round(p.progress)+"%",p.progress);
+        }
+      });
+    })();
+    asrPromise.catch(()=>{asrPromise=null;});
+  }
+  return asrPromise;
+}
+async function whisperTranscribe(blob){
+  setBusy("Getting your audio ready…",5);
+  const ab=await blob.arrayBuffer();
+  const ac=new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+  const audio=await ac.decodeAudioData(ab); ac.close();
+  const data=audio.getChannelData(0);
+  setBusy("Loading the private transcriber…",10);
+  const asr=await getASR();
+  setBusy("Turning your speech into text on this phone…",100);
+  const out=await asr(data,{chunk_length_s:30,stride_length_s:5});
+  return (out&&out.text||"").trim();
+}
+
+/* ================= Scoring ================= */
+function findPauses(fr,sil){
+  const out=[]; let st=null, seen=false;
+  fr.forEach(f=>{
+    if(f.volume<sil){if(st===null&&seen) st=f.t;}
+    else{
+      seen=true;
+      if(st!==null){const ms=f.t-st; if(ms>=300) out.push({start:st,ms,kind:ms<400?"short":(ms<=1800?"strategic":"awkward")}); st=null;}
+    }
+  });
+  return out;
+}
+function findUptalk(fr,sil){
+  const phrases=[]; let cur=[],quiet=0;
+  fr.forEach(f=>{
+    if(f.volume<sil){quiet++; if(quiet>=8&&cur.length){phrases.push(cur);cur=[];}}
+    else{quiet=0;cur.push(f);}
+  });
+  if(cur.length) phrases.push(cur);
+  let flagged=0,total=0; const at=[];
+  phrases.forEach(p=>{
+    const ps=p.filter(f=>f.pitch); if(ps.length<12) return; total++;
+    const tail=median(ps.slice(-5).map(f=>f.pitch)), body=median(ps.slice(-20,-5).map(f=>f.pitch));
+    if(body&&tail/body>1.15){flagged++; at.push(+(p[p.length-1].t/1000).toFixed(1));}
+  });
+  return {flagged,total,at};
+}
+function buildTimeline(fr){
+  const out=[]; let bucket=[],next=500;
+  fr.forEach(f=>{
+    bucket.push(f);
+    if(f.t>=next){
+      const ps=bucket.map(b=>b.pitch).filter(x=>!!x).sort((a,b)=>a-b);
+      out.push({t:+(f.t/1000).toFixed(1),v:+Math.max.apply(null,bucket.map(b=>b.volume)).toFixed(3),p:ps.length?Math.round(ps[Math.floor(ps.length/2)]):null});
+      bucket=[]; next+=500;
+    }
+  });
+  return out.slice(0,1500);
+}
+function makeVM(fr,text){
+  const cfg=MODES[mode], sil=cal.silence;
+  const durMs=fr[fr.length-1].t, mins=Math.max(durMs/60000,0.05);
+  const words=text.trim().split(/\s+/).filter(Boolean).length;
+  const haveText=words>=5;
+  const wpm=words/mins, fc=fillerCount(text), fpm=fc/mins;
+  const pauses=findPauses(fr,sil);
+  const awkward=pauses.filter(p=>p.kind==="awkward").length, strategic=pauses.filter(p=>p.kind==="strategic").length;
+  const up=findUptalk(fr,sil);
+  const upRatio=up.total?up.flagged/up.total:0;
+  const lo=cfg.wpm[0],hi=cfg.wpm[1], off=wpm<lo?lo-wpm:(wpm>hi?wpm-hi:0);
+  const pace=haveText?clamp(100-off*2):null;
+  const clarity=haveText?clamp(100-Math.max(0,fpm-cfg.fillers)*12-awkward*4):null;
+  const pitches=fr.map(f=>f.pitch).filter(p=>!!p), vols=fr.map(f=>f.volume).filter(v=>v>sil);
+  const semis=pitches.length>10?12*Math.log2(pct(pitches,0.9)/pct(pitches,0.1)):0;
+  const mean=vols.reduce((a,b)=>a+b,0)/(vols.length||1);
+  const sd=Math.sqrt(vols.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(vols.length||1));
+  const energy=clamp((semis/8)*60+(sd/(mean||1))*80);
+  const confidence=clamp(85-upRatio*(cfg.uptalk==="strict"?70:45)-awkward*5+Math.min(strategic,5)*3);
+  const F=CoachLang.flags(text);
+  const an=CoachLang.analyze(text,mins,mode);
+  const scores={clarity,confidence,pace,energy,words:(an&&haveText)?an.score:null};
+  const overall=weightedOverall(scores,mode);
+  const vm={
+    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+    date:Date.now(), mode, drillId:activeDrill?activeDrill.id:null, durationSec:Math.round(durMs/1000),
+    overall, scores,
+    stats:{wpm:Math.round(wpm),words,fillers:fc,fpm,awkward,strategic,upFlagged:up.flagged,upTotal:up.total,semis,haveText},
+    pauses:pauses.filter(p=>p.kind!=="short").map(p=>({start:Math.round(p.start),ms:Math.round(p.ms),kind:p.kind})),
+    upAt:up.at, timeline:buildTimeline(fr), recError:"", whisperErr:"",
+    lang:(an&&haveText)?{score:an.score,comps:an.comps}:null
+  };
+  if(MODES[mode]&&MODES[mode].re&&haveText) vm.comply=complianceCheck(F.t);
+  if(activeDrill&&activeDrill.obj){
+    vm.objection=haveText?objectionScore(F):null;
+    vm.drillPass=haveText?(vm.objection.score>=75&&vm.objection.parts[4].score===100):null;
+  } else if(activeDrill&&activeDrill.flex){
+    const m=styleMatch(vm,F,activeDrill.flex);
+    vm.flex={style:activeDrill.flex,mystery:activeDrill.mystery,guess:flexGuess,match:m.score,parts:m.parts};
+    vm.drillPass=m.score===null?null:m.score>=70;
+  } else if(activeDrill){
+    let pass=null;
+    try{pass=activeDrill.check(vm,{F,text:F.t});}catch(e){pass=null;}
+    vm.drillPass=pass;
+  }
+  return vm;
+}
+function tipsFor(v){
+  const cfg=MODES[v.mode]||MODES.sales, s=v.stats, out=[];
+  if(s.haveText){
+    if(s.wpm<cfg.wpm[0]) out.push("You spoke at "+s.wpm+" words a minute, which is slow. For "+cfg.label.toLowerCase()+", aim for "+cfg.wpm[0]+" to "+cfg.wpm[1]+". Close the gaps between thoughts, not the pauses that land a point.");
+    else if(s.wpm>cfg.wpm[1]) out.push("You spoke at "+s.wpm+" words a minute, which is fast. Aim for "+cfg.wpm[0]+" to "+cfg.wpm[1]+". Take a breath at the end of each sentence.");
+    if(s.fpm>cfg.fillers) out.push("You used "+s.fillers+" filler words. When one is coming, stay silent for a beat instead. A quiet pause sounds more confident than \"um\".");
+  }
+  if(s.upTotal>0 && s.upFlagged/s.upTotal>0.3) out.push(s.upFlagged+" of "+s.upTotal+" sentences ended on a rising tone, which can sound like a question. Let your voice drop on the last word of a statement.");
+  if(s.awkward>0) out.push(s.awkward+(s.awkward>1?" pauses ran":" pause ran")+" longer than 2 seconds. Keep your next line ready, or take a slow breath and keep going.");
+  if(v.scores.energy<50) out.push("Your voice stayed flat. Pick two or three key words per sentence and say them louder and higher.");
+  if(v.lang){const low=v.lang.comps.slice().sort((a,b)=>a.score-b.score)[0]; if(low&&low.score<70) out.push(low.tip);}
+  if(!out.length && s.haveText) out.push("Nice work. Your pace, tone, and pauses were steady. Try a different mode to stretch yourself.");
+  if(!s.haveText) out.push("I didn't get enough of a transcript to score pace and fillers this time"+(v.whisperErr?" ("+v.whisperErr+")":(v.recError?" (the browser reported: "+v.recError+")":""))+". Voice, pause, and ending-tone scores are still real.");
+  return out.slice(0,4);
+}
+
+/* ================= Report ================= */
+function chartSVG(tl,pauses,upAt){
+  if(!tl||tl.length<2) return '<p class="muted small">Not enough data for a chart.</p>';
+  const W=320,H=150,dur=tl[tl.length-1].t||1, x=t=>(t/dur)*W;
+  const vmax=Math.max.apply(null,tl.map(p=>p.v).concat([0.01]));
+  const ps=tl.map(p=>p.p).filter(p=>!!p), pmin=ps.length?Math.min.apply(null,ps):0, pmax=ps.length?Math.max.apply(null,ps):1;
+  const py=p=>H-14-((p-pmin)/Math.max(pmax-pmin,1))*(H-40);
+  const bands=pauses.map(p=>'<rect class="'+(p.kind==="awkward"?"c-bad":"c-good")+'" x="'+x(p.start/1000).toFixed(1)+'" y="0" width="'+Math.max(2,x(p.ms/1000)).toFixed(1)+'" height="'+H+'"/>').join("");
+  const area="M0,"+H+" "+tl.map(p=>"L"+x(p.t).toFixed(1)+","+(H-(p.v/vmax)*(H-24)).toFixed(1)).join(" ")+" L"+W+","+H+" Z";
+  let path="",pen=false;
+  tl.forEach(p=>{if(p.p){path+=(pen?"L":"M")+x(p.t).toFixed(1)+","+py(p.p).toFixed(1)+" ";pen=true;}else pen=false;});
+  const dots=upAt.map(t=>'<circle class="c-up" cx="'+x(t).toFixed(1)+'" cy="10" r="5"/>').join("");
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Volume and pitch over the session">'+bands+'<path class="c-vol" d="'+area+'"/><path class="c-pitch" d="'+path+'"/>'+dots+'</svg>';
+}
+const MODE_OVERALL={
+  listing:{clarity:.15,confidence:.2,pace:.1,energy:.1,words:.45},
+  buyer:{clarity:.15,confidence:.2,pace:.1,energy:.1,words:.45},
+  prospect:{clarity:.2,confidence:.2,pace:.1,energy:.1,words:.4},
+  negotiate:{clarity:.15,confidence:.25,pace:.1,energy:.05,words:.45},
+  sales:{clarity:.15,confidence:.2,pace:.1,energy:.1,words:.45},
+  pitch:{clarity:.15,confidence:.15,pace:.1,energy:.2,words:.4},
+  "public":{clarity:.15,confidence:.1,pace:.1,energy:.3,words:.35},
+  interview:{clarity:.2,confidence:.2,pace:.15,energy:.05,words:.4}
+};
+function weightedOverall(sc,m){
+  const w=MODE_OVERALL[m]||MODE_OVERALL.sales; let a=0,b=0;
+  Object.keys(w).forEach(k=>{if(sc[k]!==null&&sc[k]!==undefined){a+=sc[k]*w[k];b+=w[k];}});
+  return b?clamp(a/b):0;
+}
+const LABELS=[["clarity","Clarity","Few fillers and long pauses"],["confidence","Confidence","Steady endings, deliberate pauses"],["pace","Pace","Words per minute for this mode"],["energy","Energy","Variety in pitch and volume"],["words","Words","Phrases that persuade in this mode"]];
+function renderWords(v){
+  const c=$("wordsCard"); c.hidden=false;
+  if(!v.lang){c.innerHTML='<h2>Words</h2><p class="muted small" style="margin:0">Not scored. I need a transcript of at least about 15 words. Use the live transcript, or turn on Private transcript in Settings.</p>';return;}
+  const cfg=MODES[v.mode]||MODES.sales;
+  c.innerHTML='<h2>Words for '+esc(cfg.label.toLowerCase())+'</h2><p class="muted small">'+esc(CoachLang.MODE_NOTE[v.mode]||"")+'</p>'+
+    v.lang.comps.map(x=>'<div class="score"><div class="top"><span>'+esc(x.label)+'</span><span>'+x.score+'</span></div><div class="bar"><i style="width:'+x.score+'%"></i></div><div class="hint">'+esc(x.detail)+'<span class="ev">'+esc(CoachLang.EV[x.ev]||"")+'</span></div>'+(x.score<70?'<div class="hint" style="color:var(--ink);margin-top:4px">'+esc(x.tip)+'</div>':'')+'</div>').join("");
+}
+async function renderReport(v,fromHistory){
+  const cfg=MODES[v.mode]||MODES.sales;
+  $("overall").textContent=v.overall;
+  $("overallLabel").textContent="out of 100 · "+cfg.label+" · "+fmt(v.durationSec*1000);
+  const drill=DRILLS.filter(d=>d.id===v.drillId)[0];
+  const vd=$("verdict");
+  if(drill){
+    let r=v.drillPass;
+    if(r===undefined){try{r=drill.check(v,{F:CoachLang.flags(""),text:""});}catch(e){r=null;}}
+    vd.hidden=false; vd.className="card verdict"+(r?" ok":"");
+    vd.innerHTML="<h2>Drill: "+esc(drill.title)+"</h2><p style='margin:0'>"+(r===null?"I couldn't judge this one because I didn't catch enough speech. "+esc(drill.goal):(r?"You did it. ":"Not quite yet. ")+esc(drill.goal))+"</p>";
+    if(v.objection) vd.innerHTML+=partsHTML("Method score",v.objection);
+  } else if(v.flex){
+    const S=DISC[v.flex.style], f=v.flex;
+    vd.hidden=false; vd.className="card verdict"+(f.match!==null&&f.match>=70?" ok":"");
+    let h="<h2>"+chip(f.style)+(f.mystery?"Mystery client: ":"Tuning to ")+esc(S.name)+"</h2>";
+    if(f.mystery) h+="<p>"+(f.guess?(f.guess===f.style?"You read them right.":"You guessed "+esc(DISC[f.guess].name)+" ("+f.guess+"). Clue: "+esc(DISC_CLUE[f.style])):"You didn't lock in a guess. Clue: "+esc(DISC_CLUE[f.style]))+"</p>";
+    h+=f.match===null?"<p style='margin:0'>I couldn't score your style match because I didn't catch enough speech.</p>":"<p><b>Style match: "+f.match+"</b></p>"+f.parts.map(x=>'<div class="score"><div class="top"><span>'+esc(x.label)+'</span><span>'+x.score+'</span></div><div class="bar"><i style="width:'+x.score+'%"></i></div>'+(x.score<70?'<div class="hint" style="color:var(--ink)">'+esc(x.tip)+'</div>':'')+'</div>').join("");
+    vd.innerHTML=h;
+  } else vd.hidden=true;
+  $("scores").innerHTML=LABELS.map(l=>{
+    const val=v.scores[l[0]], none=(val===null||val===undefined);
+    return '<div class="score"><div class="top"><span>'+l[1]+'</span><span>'+(none?"Not scored":val)+'</span></div><div class="bar"><i style="width:'+(none?0:val)+'%"></i></div><div class="hint">'+l[2]+'</div></div>';
+  }).join("");
+  renderWords(v);
+  const cc=$("complyCard"); cc.hidden=!(v.comply&&v.comply.length);
+  if(!cc.hidden) cc.innerHTML="<h2>Compliance heads-up</h2>"+v.comply.map(m=>"<p class='small'>"+esc(m)+"</p>").join("")+"<p class='small muted' style='margin:0'>General guidance, not legal advice. Check with your broker and local rules.</p>";
+  $("tips").innerHTML=tipsFor(v).map(t=>"<li>"+esc(t)+"</li>").join("");
+  $("chart").innerHTML=chartSVG(v.timeline,v.pauses,v.upAt);
+  const s=v.stats;
+  $("statline").textContent=(s.haveText?s.wpm+" words a minute, "+s.fillers+" filler words. ":"")+s.strategic+" confident pauses, "+s.awkward+" long pauses. "+s.upFlagged+" of "+s.upTotal+" sentences ended on a rising tone. Pitch range: "+s.semis.toFixed(1)+" semitones.";
+  await renderRecCard(v,fromHistory);
+}
+async function renderRecCard(v,fromHistory){
+  const c=$("recCard"); c.hidden=true; c.innerHTML="";
+  if(!fromHistory && pendingRec && pendingRec.id===v.id){
+    c.hidden=false;
+    c.innerHTML='<h2>Keep this recording?</h2><p class="small muted">It may contain private information. If you do nothing, it is deleted. Saved recordings stay on this phone only, and the app keeps the last 5 or 30 days.</p><div class="row"><button class="primary" id="btnRecSave">Save it</button><button class="danger" id="btnRecDel">Delete it</button></div>';
+    $("btnRecSave").onclick=async()=>{
+      try{await idbPut("recs",{id:pendingRec.id,blob:pendingRec.blob,date:Date.now()}); await cleanupRecs(); c.innerHTML='<p style="margin:0">Saved on this phone. You can play it from History.</p>';}
+      catch(e){c.innerHTML='<p style="margin:0">I couldn\'t save it on this phone.</p>';}
+      pendingRec=null;
+    };
+    $("btnRecDel").onclick=()=>{pendingRec=null; c.hidden=true;};
+  } else if(fromHistory){
+    try{
+      const r=await idbGet("recs",v.id);
+      if(r&&r.blob){
+        c.hidden=false;
+        const url=URL.createObjectURL(r.blob);
+        c.innerHTML='<h2>Your recording</h2><audio controls src="'+url+'"></audio><button class="danger" id="btnRecDel2" style="margin-top:10px;width:100%">Delete recording</button>';
+        $("btnRecDel2").onclick=async()=>{await idbDel("recs",v.id); URL.revokeObjectURL(url); c.hidden=true;};
+      }
+    }catch(e){}
+  }
+}
+
+/* ================= Session ================= */
+async function begin(){
+  finalText="";interimText="";recOff=false;recError="";pendingRec=null;note("");
+  $("chipFill").textContent="Fillers: 0";$("chipPace").textContent="Pace: –";$("chipTime").textContent="0:00";
+  renderTranscript();
+  try{await openMic();}catch(e){note("I couldn't open the microphone. Allow it in your browser and try again.");return;}
+  running=true; liveStart=performance.now();
+  startRecorder();
+  try{if(navigator.wakeLock) wakeLock=await navigator.wakeLock.request("screen");}catch(e){}
+  autoPrivate=!privateMode && lsGet("srConflict")==="1";
+  renderTranscript();
+  if(!privateMode && !autoPrivate) startRec();
+  $("btnGo").textContent="Stop and see my report"; $("btnGo").className="stop";
+  renderPracticeTop(); setTabsLocked(true);
+  paceTimer=setInterval(()=>{
+    const el=performance.now()-liveStart; $("chipTime").textContent=fmt(el);
+    if(!privateMode){
+      const words=finalText.trim().split(/\s+/).filter(Boolean).length;
+      if(el>8000&&words>3) $("chipPace").textContent="Pace: "+Math.round(words/(el/60000))+" WPM";
+      if(el>3500&&!recOff){
+        const recent=frames.slice(-40);
+        if(recent.length>=40&&recent.every(f=>f.volume<0.0002)){recOff=true;stopRec();lsSet("srConflict","1");note("Your phone can't share the mic between live text and voice analysis. Keep talking: I'll turn your speech into text on the phone after you tap Stop, and do that automatically from now on.");}
+      }
+    }
+  },1000);
+}
+async function end(){
+  running=false; clearInterval(paceTimer); stopRec(); setTabsLocked(false);
+  const blob=await stopRecorder();
+  const fr=frames.slice(); closeMic();
+  if(wakeLock){try{wakeLock.release();}catch(e){} wakeLock=null;}
+  $("btnGo").textContent="Start speaking"; $("btnGo").className="primary";
+  renderPracticeTop();
+  if(fr.length<60){note("That was too short to score. Speak for at least a few seconds.");return;}
+  let text=finalText+interimText, whisperErr="";
+  const liveWords=text.trim().split(/\s+/).filter(Boolean).length;
+  const voicedFrames=fr.filter(f=>f.volume>cal.silence).length;
+  const fallback=!privateMode && !!blob && liveWords<5 && voicedFrames>40;
+  if(privateMode||autoPrivate||fallback){
+    showScreen("busy"); text="";
+    if(!blob) whisperErr="no audio was captured";
+    else{
+      try{text=await whisperTranscribe(blob); if(fallback&&text.split(/\s+/).filter(Boolean).length>=5) lsSet("srConflict","1");}
+      catch(e){const m=(e&&e.message)?e.message:String(e); whisperErr=/fetch|network|load/i.test(m)?"I couldn't download the on-device transcriber. Check your internet connection, then try again":m;}
+    }
+  }
+  const vm=makeVM(fr,text); vm.recError=recError; vm.whisperErr=whisperErr;
+  await saveSessionRecord(vm);
+  pendingRec=blob?{id:vm.id,blob}:null;
+  await renderReport(vm,false);
+  showScreen("report");
+}
+
+/* ================= Practice screen ================= */
+function nextPrompt(){
+  const list=activeDrill?activeDrill.prompts:PROMPTS[mode];
+  const others=list.filter(p=>p!==currentPrompt);
+  currentPrompt=pick(others.length?others:list);
+}
+function renderPracticeTop(){
+  const box=$("pills"); box.innerHTML="";
+  (parentOf(mode)==="sales"?SALES_SUB:TOP.filter(k=>k!=="sales")).forEach(k=>{
+    const b=document.createElement("button"); b.className="pill"; b.textContent=MODES[k].label;
+    b.setAttribute("aria-pressed",String(k===mode)); b.disabled=running||!!activeDrill;
+    b.onclick=()=>{mode=k; currentPrompt=""; nextPrompt(); renderPracticeTop();};
+    box.appendChild(b);
+  });
+  if(!currentPrompt) nextPrompt();
+  const c=$("promptCard");
+  if(activeDrill){
+    c.innerHTML="<h2>Drill: "+esc(activeDrill.title)+"</h2><p><b>Goal:</b> "+esc(activeDrill.goal)+"</p>"+
+      (activeDrill.buyer?'<p class="muted small" style="margin-bottom:2px">They say:</p><p><b>\u201c'+esc(activeDrill.buyer)+'\u201d</b></p>'+(running?"":'<button class="ghost" id="btnBuyer" style="width:100%;margin-bottom:10px">Hear them say it</button>'):"")+
+      (activeDrill.mystery&&!running?'<p class="small muted" style="margin:0 0 6px">Your read of their style:</p><div class="row" style="margin-bottom:10px">'+["D","I","S","C"].map(k=>'<button class="pill" data-g="'+k+'" aria-pressed="'+(flexGuess===k)+'">'+k+'</button>').join("")+'</div>':"")+
+      "<p>"+esc(currentPrompt)+"</p>"+
+      (running?"":'<div class="row"><button class="ghost" id="btnNewP">Another prompt</button><button class="ghost" id="btnEndDrill">End drill</button></div>');
+  } else {
+    c.innerHTML="<h2>Need an idea?</h2><p>"+esc(currentPrompt)+"</p>"+(running?"":'<button class="ghost" id="btnNewP" style="width:100%">Another prompt</button>');
+  }
+  if($("btnBuyer")) $("btnBuyer").onclick=()=>speakBuyer(activeDrill.buyer,activeDrill.flex);
+  c.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{flexGuess=b.getAttribute("data-g");renderPracticeTop();});
+  if($("btnNewP")) $("btnNewP").onclick=()=>{nextPrompt();renderPracticeTop();};
+  if($("btnEndDrill")) $("btnEndDrill").onclick=()=>{activeDrill=null;currentPrompt="";nextPrompt();renderPracticeTop();};
+  if(!running) renderTranscript();
+}
+
+/* ================= Drills ================= */
+function renderDrills(){
+  let html="";
+  [mode].concat(VISIBLE().filter(k=>k!==mode)).forEach(k=>{
+    const ds=DRILLS.filter(d=>d.mode===k); if(!ds.length) return;
+    html+='<h2 style="margin:18px 0 6px">'+esc(MODES[k].label)+'</h2>'+ds.map(d=>'<div class="card"><h2>'+esc(d.title)+'</h2><p>'+esc(d.goal)+'</p><button class="primary" data-drill="'+d.id+'">Start this drill</button></div>').join("");
+  });
+  $("drillList").innerHTML=html;
+  $("drillList").querySelectorAll("button[data-drill]").forEach(b=>{
+    b.onclick=()=>{
+      activeDrill=DRILLS.filter(d=>d.id===b.getAttribute("data-drill"))[0];
+      mode=activeDrill.mode; currentPrompt=""; nextPrompt(); showScreen("practice");
+    };
+  });
+}
+let libMode="listing";
+function renderLibrary(){
+  const box=$("libPills"); box.innerHTML="";
+  VISIBLE().forEach(k=>{
+    const b=document.createElement("button"); b.className="pill"; b.textContent=MODES[k].label;
+    b.setAttribute("aria-pressed",String(k===libMode)); b.onclick=()=>{libMode=k;renderLibrary();}; box.appendChild(b);
+  });
+  const L=CoachLang.LIB.filter(e=>e.modes.indexOf(libMode)>=0);
+  const sec=(title,kind)=>{
+    const items=L.filter(e=>e.kind===kind); if(!items.length) return "";
+    return '<h2 style="margin:18px 0 6px">'+title+'</h2>'+items.map(e=>
+      '<div class="card"><div style="font-weight:700;margin-bottom:4px">'+esc(e.title)+'<span class="ev">'+esc(CoachLang.EV[e.ev])+'</span></div>'+
+      e.phrases.map(p=>'<div class="phrase">\u201c'+esc(p)+'\u201d</div>').join("")+
+      '<p class="small muted" style="margin:6px 0 0">'+esc(e.why)+' <i>Source: '+esc(e.src)+'.</i></p></div>').join("");
+  };
+  $("libBody").innerHTML='<div class="card small">'+esc(CoachLang.MODE_NOTE[libMode])+'</div>'+
+    sec("Say more of","use")+sec("Voice","voice")+sec("Say less of","avoid")+
+    '<div class="card small muted"><b>How to read the tags.</b> Research-backed: tested in published experiments or meta-analyses. Field practice: used by FBI crisis negotiators and sales teams, with little controlled testing. Mixed evidence: results depend on context.</div>'+
+    '<div class="card small muted"><b>Left out on purpose.</b> Covert hypnosis and \u201cmind control\u201d scripts. Reviews found no evidence that hypnosis gives control over behavior, and in interrogation studies, pressure tactics did worse than rapport.</div>';
+}
+function speakBuyer(text,style){
+  if(!("speechSynthesis" in window)) return;
+  const u=new SpeechSynthesisUtterance(text), coach=pickVoice();
+  const other=voices.filter(v=>!coach||v.name!==coach.name)[0];
+  if(other){u.voice=other;u.lang=other.lang;} else u.lang="en-US";
+  const vp=(style&&DISC[style])?DISC[style].voice:{rate:1,pitch:0.7};
+  u.pitch=vp.pitch; u.rate=vp.rate; speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+
+/* ================= History ================= */
+function spark(vals){
+  if(vals.length<2) return "";
+  const W=300,H=60;
+  const pts=vals.map((v,i)=>(i/(vals.length-1)*W).toFixed(1)+","+(H-4-(v/100)*(H-8)).toFixed(1)).join(" ");
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="spark" aria-label="Overall score trend"><polyline points="'+pts+'" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+}
+async function renderHistory(){
+  const body=$("histBody"); body.innerHTML='<p class="muted">Loading…</p>';
+  let rows=[], recIds=new Set();
+  try{rows=(await idbAll("sessions")).sort((a,b)=>b.date-a.date); recIds=new Set(await idbKeys("recs"));}
+  catch(e){body.innerHTML='<div class="card"><p>I can\'t save sessions in this browser, so there is no history to show.</p></div>';return;}
+  if(!rows.length){body.innerHTML='<div class="card"><h2>No sessions yet</h2><p class="muted">Finish your first practice and it shows up here with your trend.</p></div>';return;}
+  const prev=rows.slice(1,6), avg=prev.length?prev.reduce((a,r)=>a+r.overall,0)/prev.length:null;
+  const delta=avg!==null?Math.round(rows[0].overall-avg):null;
+  let html='<div class="card">';
+  if(delta!==null) html+='<p style="margin-bottom:8px;color:'+(delta>=0?"var(--wave)":"var(--warn)")+'"><b>Last session: '+(delta>=0?"+":"")+delta+'</b> compared with your previous average</p>';
+  html+=spark(rows.slice(0,20).reverse().map(r=>r.overall))+'<p class="muted small" style="margin:6px 0 0">'+rows.length+' session'+(rows.length>1?"s":"")+' saved on this phone</p></div>';
+  html+=rows.map((r,i)=>{
+    const d=DRILLS.filter(x=>x.id===r.drillId)[0];
+    return '<button class="item" data-i="'+i+'"><div class="l1"><span>'+esc((MODES[r.mode]||MODES.sales).label)+(d?" · "+esc(d.title):(r.flex?" · "+(r.flex.mystery?"Mystery ":"")+r.flex.style+" client":""))+'</span><span>'+r.overall+'/100</span></div><div class="l2">'+new Date(r.date).toLocaleDateString()+' · '+fmt(r.durationSec*1000)+(r.stats.haveText?' · '+r.stats.wpm+' WPM · '+r.stats.fillers+' fillers':'')+(recIds.has(r.id)?' · recording saved':'')+'</div></button>';
+  }).join("");
+  body.innerHTML=html;
+  body.querySelectorAll(".item").forEach(b=>{
+    b.onclick=async()=>{const r=rows[+b.getAttribute("data-i")]; await renderReport(r,true); showScreen("report");};
+  });
+}
+
+/* ================= Settings ================= */
+async function renderSettings(){
+  $("btnLiveAgain").hidden=lsGet("srConflict")!=="1";
+  $("setName").value=userName; $("privToggle").checked=privateMode; $("boostSel").value=boostSetting;
+  $("boostInfo").textContent="Current boost: "+(micGain||1).toFixed(1)+"×. Auto sets it when you tune your mic. Tune again where you'll practice for the best result.";
+  try{
+    if(navigator.storage&&navigator.storage.estimate){
+      const e=await navigator.storage.estimate();
+      $("storeInfo").textContent="Sessions are saved on this phone only. Using about "+(e.usage/1048576).toFixed(1)+" MB. Use a backup so nothing is lost if you clear your browser data.";
+    }
+  }catch(e){}
+}
+async function exportData(){
+  try{
+    const rows=await idbAll("sessions");
+    const blob=new Blob([JSON.stringify({app:"speech-coach",version:1,sessions:rows})],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download="speech-coach-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }catch(e){alert("I couldn't create the backup.");}
+}
+async function importData(file){
+  try{
+    const j=JSON.parse(await file.text()); const list=Array.isArray(j)?j:(j.sessions||[]);
+    let n=0; for(const r of list){ if(r&&r.id&&r.scores){await idbPut("sessions",r); n++;} }
+    alert("Restored "+n+" session"+(n===1?"":"s")+".");
+  }catch(e){alert("That file doesn't look like a Speech Coach backup.");}
+}
+async function wipe(){
+  if(!confirm("Delete all saved sessions and recordings from this phone? This can't be undone.")) return;
+  try{await idbClear("sessions"); await idbClear("recs");}catch(e){}
+  alert("All saved data deleted.");
+}
+
+/* ================= Navigation ================= */
+const SCREENS=["front","modes","home","disc","practice","drills","library","history","settings","report","busy"];
+let tabsLocked=false;
+function setTabsLocked(v){tabsLocked=v;}
+function showScreen(id){
+  if(curScreen==="report"&&id!=="report") pendingRec=null;
+  curScreen=id;
+  SCREENS.forEach(s=>{$(s).hidden=(s!==id);});
+  $("tabs").hidden=(id==="front"||id==="busy");
+  document.documentElement.classList.toggle("front",id==="front");
+  document.querySelectorAll("#tabs button").forEach(b=>{
+    if(b.getAttribute("data-tab")===(TABMAP[id]||id)) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+  });
+  window.scrollTo(0,0);
+  if(id==="practice") renderPracticeTop();
+  if(id==="drills") renderDrills();
+  if(id==="library") renderLibrary();
+  if(id==="modes") renderModes();
+  if(id==="home") renderHome();
+  if(id==="disc") renderDisc();
+  if(id==="history") renderHistory();
+  if(id==="settings") renderSettings();
+  if(id!=="home"&&id!=="front") armBack();
+}
+let backArmed=false;
+function armBack(){if(!backArmed){try{history.pushState({coach:1},"");backArmed=true;}catch(e){}}}
+window.addEventListener("popstate",()=>{
+  backArmed=false;
+  if(running||curScreen==="busy"){armBack();note("Tap Stop first, then go back.");return;}
+  if(curScreen!=="home"&&curScreen!=="front") showScreen(modeChosen?"home":"modes");
+});
+
+/* ================= Objection method + compliance ================= */
+const OBJ_RX={
+  agree:/\b(?:you probably can|you might be right|you may be right|that'?s fair|fair (?:point|enough|question)|that makes sense|i understand|i get (?:that|it)|totally fair|you'?re right|good question|great question|absolutely|i hear you|a lot of (?:people|sellers|buyers|homeowners) feel)\b/,
+  anchor:/\b(?:earlier you (?:said|mentioned|told me)|you mentioned|you said|you told me|when we (?:talked|spoke)|you shared|you were saying)\b/g,
+  decide:/\b(?:which (?:option|one|approach|agent|plan)|gives? you (?:the most |more )?confidence|what matters most|based on (?:everything|what)|how would you like to|what would you like to do|what feels right|how do you want to)\b/g,
+  defend:/\b(?:because we|we'?re worth|i'?m worth|we charge|the reason (?:we|i) charge|let me explain why|i'?ll (?:match|lower|reduce|cut|drop)|i can (?:lower|reduce|drop|cut|match)|discount|our commission is|my commission (?:is|covers))\b/g
+};
+function objectionScore(F){
+  const t=F.t, first=" "+t.trim().split(" ").slice(0,20).join(" ")+" ", parts=[];
+  const early=OBJ_RX.agree.test(first), any=OBJ_RX.agree.test(t);
+  parts.push({label:"Agreed first",score:early?100:(any?60:0),tip:'Open by agreeing: "You probably can," or "That\'s fair." It takes away the fight.'});
+  const q=Math.max(F.openQ,F.qMarks);
+  parts.push({label:"Asked a different question",score:q>=2?100:(q===1?75:0),tip:'Move the comparison off price: "Can I ask what made you invite me today?"'});
+  const an=(t.match(OBJ_RX.anchor)||[]).length;
+  parts.push({label:"Tied it back to their words",score:an?100:0,tip:'Bring back what they told you: "Earlier you mentioned netting the most mattered more than saving on fees…"'});
+  const dc=(t.match(OBJ_RX.decide)||[]).length;
+  parts.push({label:"Let them decide",score:dc?100:0,tip:'Hand them the decision: "Based on everything we talked about, which option gives you the most confidence?"'});
+  const df=(t.match(OBJ_RX.defend)||[]).length+F.argue+F.directive;
+  parts.push({label:"No defending or arguing",score:Math.max(0,100-df*40),tip:"Skip justifying and discounting. Defending creates resistance."});
+  return {score:clamp(parts.reduce((a,p)=>a+p.score,0)/parts.length),parts};
+}
+function partsHTML(title,o){
+  return '<p style="margin:10px 0 4px"><b>'+esc(title)+': '+o.score+'</b></p>'+o.parts.map(x=>'<div class="score"><div class="top"><span>'+esc(x.label)+'</span><span>'+x.score+'</span></div><div class="bar"><i style="width:'+x.score+'%"></i></div>'+(x.score<70?'<div class="hint" style="color:var(--ink)">'+esc(x.tip)+'</div>':'')+'</div>').join("");
+}
+const COMPLY=[
+  {re:/\b(?:good|great|perfect|ideal) for (?:families|a family|kids|young couples|singles|retirees|seniors)\b/,msg:"Saying who a home is \"good for\" (families, kids, retirees) can raise fair housing concerns. Describe the property instead: bedrooms, yard, layout."},
+  {re:/\b(?:family neighborhood|safe neighborhood|good neighborhood|bad neighborhood|exclusive neighborhood|safe area|bad area|those people)\b/,msg:"Calling an area safe, good, or bad can be heard as steering. Point clients to public data and let them decide."},
+  {re:/\b(?:great|good|best|bad) schools?\b/,msg:"Rating schools can raise steering concerns. Share where to find school information instead."},
+  {re:/\b(?:church|mosque|synagogue|temple) (?:nearby|close by|down the street|around the corner)\b/,msg:"Pointing out places of worship can raise fair housing concerns unless the client asked about them."},
+  {re:/\b(?:i (?:guarantee|promise)|guaranteed to (?:sell|appraise)|it will (?:definitely )?appraise|you'?ll definitely get)\b/,msg:"Avoid guaranteeing a sale price or appraisal. Give a range and the comparable sales behind it."}
+];
+function complianceCheck(t){return COMPLY.filter(c=>c.re.test(t)).map(c=>c.msg);}
+
+/* ================= Modes + home ================= */
+let modeChosen=false;
+const TABMAP={library:"drills",modes:"home",practice:"home",disc:"home"};
+function renderModes(){
+  $("modeCards").innerHTML=TOP.map(k=>'<button class="item mode-card" data-mode="'+k+'"><div class="l1"><span>'+esc(k==="sales"?"Sales":MODES[k].label)+'</span>'+(k==="sales"?'<span class="small" style="color:var(--accent)">+ DISC</span>':'')+'</div><div class="l2">'+esc(TOP_NOTE[k])+'</div></button>').join("");
+  $("modeCards").querySelectorAll("[data-mode]").forEach(b=>{
+    b.onclick=()=>{const k=b.getAttribute("data-mode"); mode=(k==="sales")?(SALES_SUB.indexOf(lsGet("salesSub"))>=0?lsGet("salesSub"):"listing"):k;
+      modeChosen=true;activeDrill=null;currentPrompt="";lsSet("mode",mode);showScreen("home");};
+  });
+}
+function renderHome(){
+  const inSales=parentOf(mode)==="sales";
+  $("homeTitle").textContent=inSales?"Sales":MODES[mode].label;
+  const hs=$("homeSubs"); hs.hidden=!inSales;
+  if(inSales){
+    hs.innerHTML='<p class="small muted" style="margin:0 0 6px">Choose your situation:</p><div class="pills" style="margin-top:0">'+SALES_SUB.map(k=>'<button class="pill" data-sub="'+k+'" aria-pressed="'+(k===mode)+'">'+esc(MODES[k].label)+'</button>').join("")+'</div>';
+    hs.querySelectorAll("[data-sub]").forEach(b=>b.onclick=()=>{mode=b.getAttribute("data-sub");lsSet("mode",mode);lsSet("salesSub",mode);activeDrill=null;currentPrompt="";renderHome();});
+  }
+  $("homeNote").textContent=CoachLang.MODE_NOTE[mode]||"";
+  $("btnHomeDisc").hidden=!inSales;
+}
+
+/* ================= DISC buyer styles ================= */
+const DISC={
+ D:{name:"Direct",color:"#ff5a6e",values:"Results, speed, control, and winning.",sounds:"Short sentences, blunt questions, quick decisions. Talks about outcomes and the bottom line.",tune:"Lead with the result. Be brief. Offer two options and let them choose. Match their faster pace and sound sure.",avoid:"Small talk, long stories, hedging, and too much detail up front.",opener:"Bottom line: you cut reporting time in half within 90 days. Two options. Faster or cheaper?",goal:"Answer in under 30 seconds, lead with the result, and skip the hedges.",instr:"Give them the bottom line first, then stop.",voice:{rate:1.12,pitch:0.8}},
+ I:{name:"Inspiring",color:"#ffd23f",values:"Recognition, enthusiasm, people, and new ideas.",sounds:"Lively and talkative. Tells stories, mentions people, jumps between topics.",tune:"Match their energy. Tell a quick story. Mention who else uses it. Paint the picture, then send the details in writing later.",avoid:"Dry data dumps, a flat tone, and fine print up front.",opener:"Picture your team on Monday with reports done before coffee. Teams like yours are loving it.",goal:"Bring energy, warmth, and a quick story or picture.",instr:"Match their energy and paint the picture.",voice:{rate:1.1,pitch:1.15}},
+ S:{name:"Steady",color:"#3ee0b0",values:"Stability, harmony, loyalty, and security.",sounds:"Calm and slower. Asks how a change affects the team and how the process works.",tune:"Slow down. Be warm. Explain step by step, reassure them about support, and invite their team in. Give them time.",avoid:"Pressure, deadlines, sudden change, and pushing for a fast yes.",opener:"There's no rush. Let me walk you through how the switch works, step by step, and how we support your team.",goal:"Keep a calm pace, reassure them, and use zero pressure.",instr:"Slow down, reassure, and take it step by step.",voice:{rate:0.86,pitch:0.95}},
+ C:{name:"Careful",color:"#9b7bff",values:"Accuracy, quality, logic, and evidence.",sounds:"Detailed questions. Asks how things are measured. Skeptical of big claims. Wants documents.",tune:"Bring exact numbers and how you got them. Be precise, answer exactly what they asked, and offer documentation.",avoid:"Hype, vague claims, rushing, and emotional appeals.",opener:"Specifically: average report time dropped from 16 hours to 7 across 42 teams. I'll send the method and the raw numbers.",goal:"Give exact numbers and precise words, with no hype.",instr:"Answer with exact numbers and how they were measured.",voice:{rate:0.95,pitch:0.75}}
+};
+const DISC_BANK={
+ D:["Give me the bottom line. What does this cost and what do I get?","I have five minutes. Why should I switch?","Skip the slides. Can you deliver by the first of the month or not?","Your competitor offered more. Beat it or we're done.","What's the one result I'll see in ninety days?","I don't need the history. What decision do you need from me?"],
+ I:["Oh, I love meeting new people! So who else is using this?","This sounds fun. I can already picture my team getting excited.","Honestly, I care how it feels to work with you. Are you easy to work with?","My last vendor was so boring. What makes you different?","I'll need to sell this to my team. Give me something they'll get excited about.","Wait, do you know Sarah from our Denver office? She mentioned you!"],
+ S:["We've used the same system for eight years. I'm not sure the team is ready for a change.","How would the switch actually work? I don't want to disrupt anyone.","I'd need to talk it over with the team before deciding anything.","What happens if something goes wrong after we switch? Who do we call?","We had a rough rollout last year. People are still a bit worn out.","I just want to make sure everyone is comfortable with this."],
+ C:["Can you send me the documentation and the exact specifications?","Your page says 40% faster. Faster than what, and measured how?","What's your error rate, and how do you calculate it?","I'll need to compare three vendors line by line before I decide.","Walk me through your security and compliance process in detail.","What are the exact terms if we need to cancel?"]
+};
+const DISC_CLUE={D:"Short, blunt, and focused on results and control.",I:"Upbeat and social. Talks about people and feelings.",S:"Cautious about change. Focused on the team and stability.",C:"Asks for proof, precision, and process."};
+const OPP={D:"S",S:"D",I:"C",C:"I"};
+const QUIZ=[
+ ["In a meeting, I usually…",[["get people talking and energized","I"],["push toward a decision","D"],["check the facts and details","C"],["make sure everyone is heard","S"]]],
+ ["Under pressure, I tend to…",[["stay calm and keep things steady","S"],["slow down and analyze","C"],["take charge","D"],["talk it through with people","I"]]],
+ ["What annoys me most is…",[["sloppy mistakes","C"],["wasted time","D"],["being ignored","I"],["sudden changes","S"]]],
+ ["My messages tend to be…",[["short and to the point","D"],["warm and polite","S"],["friendly, with exclamation points","I"],["detailed and precise","C"]]],
+ ["When I buy something big, I…",[["ask people I trust","S"],["go with what feels exciting","I"],["compare specs and reviews","C"],["decide fast","D"]]],
+ ["People describe me as…",[["thorough","C"],["enthusiastic","I"],["decisive","D"],["dependable","S"]]],
+ ["I prefer work that is…",[["challenging, with clear goals","D"],["structured and exact","C"],["stable and predictable","S"],["social and varied","I"]]],
+ ["In a disagreement, I…",[["try to win them over","I"],["look for peace","S"],["say it straight","D"],["point to the evidence","C"]]],
+ ["I feel best when…",[["everyone gets along","S"],["I win","D"],["it's done right","C"],["people like what I did","I"]]],
+ ["My usual pace is…",[["careful and deliberate","C"],["fast and spontaneous","I"],["steady and patient","S"],["fast and focused","D"]]],
+ ["A new idea makes me…",[["ask what it gets us","D"],["ask how it was tested","C"],["excited to try it","I"],["wonder how it affects people","S"]]],
+ ["I tend to talk…",[["in stories","I"],["in specifics","C"],["in a gentle, supportive way","S"],["in headlines","D"]]]
+];
+let discView="learn",flexGuess=null,quizAns=[],spotCur=null,spotHide=false,quizRetake=false;
+function chip(k){return '<span class="sletter" style="background:'+DISC[k].color+'">'+k+'</span>';}
+function makeFlexDrill(style,mystery){
+  flexGuess=null;
+  return {id:"flex-"+style,flex:style,mystery:!!mystery,mode:"sales",
+    title:mystery?"Mystery client":"Tune to a "+DISC[style].name+" ("+style+") client",
+    goal:mystery?"Read their style from what they say, then tune your answer to it.":DISC[style].goal,
+    buyer:pick(DISC_BANK[style]),prompts:[mystery?"Answer the way this buyer wants to be sold to.":DISC[style].instr],check:()=>null};
+}
+function startFlex(style,mystery){activeDrill=makeFlexDrill(style,mystery);if(parentOf(mode)!=="sales") mode="listing";activeDrill.mode=mode;currentPrompt="";nextPrompt();showScreen("practice");}
+const RX={
+  bottom:/\b(?:bottom line|the result|you get|you'?ll get|in short|here'?s the deal|the answer is|straight answer)\b/,
+  warm:/\b(?:excited|exciting|love|loving|amazing|fun|great|awesome|fantastic|thrilled|can'?t wait)\b/g,
+  people:/\b(?:team|people|everyone|together|customers|friends|folks|community)\b/g,
+  reassure:/\b(?:no rush|take your time|step by step|support you|we'?re with you|we'?ll be with you|we'?ll help|safe|comfortable|no pressure|at your pace|guarantee|nothing changes|smooth)\b/g,
+  precise:/\b(?:specifically|exactly|precisely|data|documented|documentation|measured|method|on average|percent|accuracy|details?|process|compliance|terms)\b/g,
+  hype:/\b(?:amazing|incredible|awesome|game ?changer|revolutionary|best ever|insane|unbelievable|mind-?blowing)\b/g
+};
+function styleMatch(v,F,st){
+  const s=v.stats,have=s.haveText,parts=[];
+  const n=re=>((F.t.match(re)||[]).length);
+  const add=(label,score,tip)=>{if(score!==null&&score!==undefined) parts.push({label,score:clamp(score),tip});};
+  if(st==="D"){
+    add("Brief",have?(F.words<=60?100:100-(F.words-60)*1.5):(v.durationSec<=30?100:100-(v.durationSec-30)*3),"Cut it down. Lead with the result in one sentence.");
+    add("Direct, no hedges",have?100-Math.max(0,F.hedgeDensity-0.5)*25:null,"Drop the hedges and say it straight.");
+    const first=" "+F.t.trim().split(" ").slice(0,25).join(" ")+" ";
+    add("Bottom line first",have?(RX.bottom.test(first)?100:(RX.bottom.test(F.t)?60:20)):null,'Open with the outcome: "Bottom line, you get…"');
+    add("Brisk pace",have?(s.wpm>=145?100:100-(145-s.wpm)*2):null,"Pick up the pace a little. D buyers tune out slow talk.");
+  } else if(st==="I"){
+    add("Vocal energy",v.scores.energy,"Lift your voice with more variety in pitch and volume.");
+    add("Warmth and excitement",have?Math.min(100,n(RX.warm)*35):null,'Show you\'re excited: "I love this part…"');
+    add("Stories and people",have?Math.min(100,(F.story+F.metaphor)*40+n(RX.people)*25):null,"Tell a quick story, or mention who else loves it.");
+  } else if(st==="S"){
+    add("Calm pace",have?(s.wpm<=150?100:100-(s.wpm-150)*2.5):null,"Slow down and give them room.");
+    add("Reassurance",have?Math.min(100,n(RX.reassure)*35):null,'Reassure them: "No rush. We\'ll take it step by step, and we\'re with you after."');
+    add("No pressure",have?100-(F.pressure+F.directive)*40:null,'Drop deadlines and "you should".');
+  } else {
+    add("Proof",have?Math.min(100,F.nums*30+F.evid*20):null,"Give exact numbers and how they were measured.");
+    add("Precision",have?Math.min(100,n(RX.precise)*35+(F.nums>0?20:0)):null,'Use precise words: "specifically", "exactly", "documented".');
+    add("No hype",have?100-n(RX.hype)*35:null,'Cut hype words like "amazing" or "game changer". C buyers distrust them.');
+  }
+  if(!parts.length) return {score:null,parts};
+  return {score:clamp(parts.reduce((a,p)=>a+p.score,0)/parts.length),parts};
+}
+function learnHTML(){
+  return '<div class="axis"><span>Task-focused</span><span>People-focused</span></div><div class="quad">'+
+    ["D","I","C","S"].map(k=>'<button data-jump="'+k+'" style="background:'+DISC[k].color+'">'+k+'<span>'+DISC[k].name+'</span></button>').join("")+
+    '</div><p class="small muted">Top row: faster and more outspoken. Bottom row: steadier and more reserved.</p>'+
+    ["D","I","S","C"].map(k=>{const s=DISC[k];return '<div class="card" id="disc-'+k+'"><h2>'+chip(k)+esc(s.name)+'</h2><p class="small"><b>Values:</b> '+esc(s.values)+'</p><p class="small"><b>How they sound:</b> '+esc(s.sounds)+'</p><p class="small"><b>How to tune to them:</b> '+esc(s.tune)+'</p><p class="small"><b>Avoid:</b> '+esc(s.avoid)+'</p><p class="phrase">\u201c'+esc(s.opener)+'\u201d</p><button class="ghost" data-flex="'+k+'" style="width:100%;margin-top:8px">Practice with a '+k+' client</button></div>';}).join("")+
+    '<div class="card small"><b>Check your read.</b> Your read is a guess, so confirm it with one question: "Do you want the short version or the full detail?" D and I buyers usually want it short. C buyers want detail. S buyers want to know how it affects their team.</div>'+
+    '<div class="card small muted"><b>How strong is this?</b> DISC is a popular field model, but its scientific validity is weak, so treat it as a guide, not a diagnosis. The idea underneath it is better supported: messages matched to a person\'s personality were rated as more persuasive in a published study. Most people mix styles, and pace (fast or steady) is the easiest thing to read in a stranger.</div>';
+}
+function meHTML(){
+  let saved=null; try{saved=JSON.parse(lsGet("disc_me")||"null");}catch(e){}
+  if(saved&&!quizRetake){
+    const p=saved.primary,s2=saved.secondary,o=OPP[p];
+    return '<div class="card"><h2>'+chip(p)+'You lean '+esc(DISC[p].name)+'</h2><p>Your next strongest style is '+esc(DISC[s2].name)+' ('+s2+').</p><p><b>Your likely blind spot:</b> '+esc(DISC[o].name)+' ('+o+') clients. They want '+esc(DISC[o].values.toLowerCase())+' That is often the opposite of how you naturally sell.</p><button class="primary" data-flex="'+o+'" style="width:100%">Practice with a '+o+' client</button></div>'+
+      '<div class="card small muted">Your answers: '+["D","I","S","C"].map(k=>k+" "+(saved.tally[k]||0)).join(" · ")+'. This is a quick self-reflection, not a validated test.</div>'+
+      '<button class="ghost" id="btnRetake" style="width:100%">Retake the quiz</button>';
+  }
+  return '<p class="muted small">Twelve quick questions. Pick the answer that sounds most like you at work. This is a self-reflection tool, not a validated test.</p>'+
+    QUIZ.map((q,i)=>'<div class="card"><p style="font-weight:600;margin-bottom:8px">'+(i+1)+'. '+esc(q[0])+'</p><div class="stack">'+q[1].map((o,j)=>'<button class="pill" style="width:100%;text-align:left" data-q="'+i+'" data-o="'+j+'" aria-pressed="'+(quizAns[i]===j)+'">'+esc(o[0])+'</button>').join("")+'</div></div>').join("")+
+    '<button class="primary" id="btnQuizDone" style="width:100%"'+(quizAns.filter(x=>x!==undefined).length<QUIZ.length?' disabled':'')+'>See my style</button>';
+}
+function newSpot(){const st=pick(["D","I","S","C"]);spotCur={st,line:pick(DISC_BANK[st]),answered:false,ok:false};}
+function spotHTML(){
+  if(!spotCur) newSpot();
+  let st={right:0,total:0}; try{st=JSON.parse(lsGet("disc_spot")||'{"right":0,"total":0}');}catch(e){}
+  return '<div class="card"><p class="muted small" style="margin-bottom:6px">Listen to the client, then pick their style.</p>'+
+    (spotHide&&!spotCur.answered?'<p class="muted"><i>Words hidden. Tap play to hear them.</i></p>':'<p><b>\u201c'+esc(spotCur.line)+'\u201d</b></p>')+
+    '<div class="row"><button class="ghost" id="btnSpotPlay">Play the client</button><button class="ghost" id="btnSpotHide">'+(spotHide?"Show the words":"Listen only")+'</button></div></div>'+
+    '<div class="quad">'+["D","I","C","S"].map(k=>'<button data-guess="'+k+'" style="background:'+DISC[k].color+(spotCur.answered&&k!==spotCur.st?';opacity:.45':'')+'"'+(spotCur.answered?' disabled':'')+'>'+k+'<span>'+DISC[k].name+'</span></button>').join("")+'</div>'+
+    (spotCur.answered?'<div class="card verdict'+(spotCur.ok?' ok':'')+'"><p style="margin:0 0 6px"><b>'+(spotCur.ok?"Right.":"Not quite.")+'</b> That was '+esc(DISC[spotCur.st].name)+' ('+spotCur.st+').</p><p class="small" style="margin:0">Clue: '+esc(DISC_CLUE[spotCur.st])+'</p></div><button class="primary" id="btnSpotNext" style="width:100%">Next client</button>':'')+
+    '<p class="small muted" style="margin-top:12px">Your accuracy: '+st.right+' of '+st.total+(st.total?' ('+Math.round(st.right/st.total*100)+'%)':'')+'</p>';
+}
+async function flexHTML(){
+  const sums={D:[0,0],I:[0,0],S:[0,0],C:[0,0]};
+  try{(await idbAll("sessions")).forEach(r=>{if(r.flex&&r.flex.match!==null&&r.flex.match!==undefined){sums[r.flex.style][0]+=r.flex.match;sums[r.flex.style][1]++;}});}catch(e){}
+  const avg={}; let weak=null;
+  Object.keys(sums).forEach(k=>{avg[k]=sums[k][1]?Math.round(sums[k][0]/sums[k][1]):null; if(avg[k]!==null&&(weak===null||avg[k]<avg[weak])) weak=k;});
+  return '<p class="muted">Hear a seller or buyer, answer in their style, and the report scores your style match.</p>'+
+    '<button class="primary" data-mystery="1" style="width:100%;margin-bottom:10px">Mystery client</button>'+
+    ["D","I","S","C"].map(k=>'<button class="item" data-flex="'+k+'"><div class="l1"><span>'+chip(k)+'Tune to a '+esc(DISC[k].name)+' client</span><span>'+(avg[k]!==null?avg[k]:"–")+'</span></div><div class="l2">'+esc(DISC[k].goal)+'</div></button>').join("")+
+    (weak?'<div class="card small">Your weakest style so far: <b>'+esc(DISC[weak].name)+' ('+weak+')</b>, averaging '+avg[weak]+'. Practice that one next.</div>':'<div class="card small muted">Your average style match for each buyer appears here after you practice.</div>');
+}
+async function renderDisc(){
+  const tabs=[["learn","Learn"],["me","My style"],["spot","Spot it"],["flex","Flex it"]];
+  $("discTabs").innerHTML=tabs.map(t=>'<button data-v="'+t[0]+'" aria-pressed="'+(discView===t[0])+'">'+t[1]+'</button>').join("");
+  $("discTabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{discView=b.getAttribute("data-v");quizRetake=false;renderDisc();});
+  const body=$("discBody");
+  if(discView==="learn") body.innerHTML=learnHTML();
+  else if(discView==="me") body.innerHTML=meHTML();
+  else if(discView==="spot") body.innerHTML=spotHTML();
+  else body.innerHTML=await flexHTML();
+  body.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{const el=$("disc-"+b.getAttribute("data-jump")); if(el) el.scrollIntoView({behavior:"smooth",block:"start"});});
+  body.querySelectorAll("[data-flex]").forEach(b=>b.onclick=()=>startFlex(b.getAttribute("data-flex"),false));
+  body.querySelectorAll("[data-mystery]").forEach(b=>b.onclick=()=>startFlex(pick(["D","I","S","C"]),true));
+  body.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{quizAns[+b.getAttribute("data-q")]=+b.getAttribute("data-o");const y=window.scrollY;renderDisc().then(()=>window.scrollTo(0,y));});
+  if($("btnQuizDone")) $("btnQuizDone").onclick=()=>{
+    const tally={D:0,I:0,S:0,C:0}; QUIZ.forEach((q,i)=>{tally[q[1][quizAns[i]][1]]++;});
+    const order=Object.keys(tally).sort((a,b)=>tally[b]-tally[a]);
+    lsSet("disc_me",JSON.stringify({primary:order[0],secondary:order[1],tally})); quizRetake=false; window.scrollTo(0,0); renderDisc();
+  };
+  if($("btnRetake")) $("btnRetake").onclick=()=>{quizRetake=true;quizAns=[];renderDisc();};
+  if($("btnSpotPlay")) $("btnSpotPlay").onclick=()=>speakBuyer(spotCur.line,spotCur.st);
+  if($("btnSpotHide")) $("btnSpotHide").onclick=()=>{spotHide=!spotHide;renderDisc();};
+  if($("btnSpotNext")) $("btnSpotNext").onclick=()=>{newSpot();renderDisc();speakBuyer(spotCur.line,spotCur.st);};
+  body.querySelectorAll("[data-guess]").forEach(b=>b.onclick=()=>{
+    if(spotCur.answered) return;
+    spotCur.answered=true; spotCur.ok=(b.getAttribute("data-guess")===spotCur.st);
+    let st={right:0,total:0}; try{st=JSON.parse(lsGet("disc_spot")||'{"right":0,"total":0}');}catch(e){}
+    st.total++; if(spotCur.ok) st.right++; lsSet("disc_spot",JSON.stringify(st)); renderDisc();
+  });
+}
+
+/* ================= Wiring ================= */
+$("btnCal").addEventListener("click",calibrate);
+$("btnQuick").addEventListener("click",()=>{speak("Welcome back"+(userName?", "+userName:"")+". Let's practice.");showScreen(modeChosen?"home":"modes");});
+$("boostSel").addEventListener("change",function(){boostSetting=this.value;lsSet("boost",boostSetting);applyBoost();renderSettings();});
+{let sc=null; try{sc=JSON.parse(lsGet("cal")||"null");}catch(e){}
+ if(sc&&sc.speechLevel){cal=sc; micGain=sc.gain||1;
+   $("btnQuick").hidden=false; $("btnCal").textContent="Tune my mic again"; $("btnCal").className="ghost"; $("btnCal").style.width="100%"; $("btnCal").style.marginTop="10px";
+   $("calStatus").textContent="Welcome back"+(userName?", "+userName:"")+". Your mic tuning is saved, so you can start right away. Tune again if you moved rooms or put the phone somewhere new.";
+ }}
+$("btnLib").addEventListener("click",()=>{libMode=mode;showScreen("library");});
+$("btnLibBack").addEventListener("click",()=>showScreen("drills"));
+$("btnHomePractice").addEventListener("click",()=>{activeDrill=null;currentPrompt="";showScreen("practice");});
+$("btnHomeDisc").addEventListener("click",()=>{discView="learn";showScreen("disc");});
+$("btnHomeDrills").addEventListener("click",()=>showScreen("drills"));
+$("btnHomeLib").addEventListener("click",()=>{libMode=mode;showScreen("library");});
+$("btnHomeModes").addEventListener("click",()=>showScreen("modes"));
+$("btnDiscBack").addEventListener("click",()=>showScreen("home"));
+{const sm=lsGet("mode"); if(MODES[sm]&&!MODES[sm].hidden){mode=sm;modeChosen=true;}}
+$("btnRetry").addEventListener("click",calibrate);
+$("btnContinue").addEventListener("click",()=>{saveCal();showScreen(modeChosen?"home":"modes");});
+$("btnGo").addEventListener("click",()=>{running?end():begin();});
+$("btnAgain").addEventListener("click",()=>{ if(activeDrill&&activeDrill.flex){activeDrill=makeFlexDrill(activeDrill.mystery?pick(["D","I","S","C"]):activeDrill.flex,activeDrill.mystery);currentPrompt="";nextPrompt();} showScreen("practice"); });
+$("btnHist").addEventListener("click",()=>showScreen("history"));
+document.querySelectorAll("#tabs button").forEach(b=>{
+  b.addEventListener("click",()=>{ if(tabsLocked){return;} const t=b.getAttribute("data-tab"); showScreen(t==="home"&&!modeChosen?"modes":t); });
+});
+
+$("nameIn").value=userName;
+if(userName) $("nameField").hidden=true;
+$("nameIn").addEventListener("change",()=>{userName=$("nameIn").value.trim();lsSet("name",userName);});
+$("setName").addEventListener("change",()=>{userName=$("setName").value.trim();lsSet("name",userName);$("nameIn").value=userName;$("nameField").hidden=!!userName;});
+if("speechSynthesis" in window){loadVoices(); speechSynthesis.onvoiceschanged=loadVoices;}
+["voiceSel","setVoice"].forEach(id=>$(id).addEventListener("change",function(){voiceName=this.value;lsSet("voice",voiceName);loadVoices();}));
+const hear=()=>{speak("Hi"+(userName?" "+userName:"")+"! This is how I sound. Pick the voice you like best.");};
+$("btnVoice").addEventListener("click",hear); $("btnSetVoice").addEventListener("click",hear);
+$("privToggle").addEventListener("change",function(){privateMode=this.checked;lsSet("private",privateMode?"1":"0");});
+$("btnExport").addEventListener("click",exportData);
+$("btnLiveAgain").addEventListener("click",()=>{lsSet("srConflict","0");renderSettings();});
+$("fileImport").addEventListener("change",function(){if(this.files[0]) importData(this.files[0]); this.value="";});
+$("btnWipe").addEventListener("click",wipe);
+$("btnRecal").addEventListener("click",()=>{
+  showScreen("front"); $("btnCal").hidden=false; $("btnCal").textContent="Start and tune my mic";
+  $("calActions").hidden=true; $("calStatus").textContent="Tap the button, then allow the microphone.";
+});
+
+/* Install support */
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("btnInstallFront").hidden=false;$("btnInstallSet").hidden=false;});
+window.addEventListener("appinstalled",()=>{deferredPrompt=null;$("btnInstallFront").hidden=true;$("btnInstallSet").hidden=true;});
+const doInstall=async()=>{if(!deferredPrompt) return; deferredPrompt.prompt(); try{await deferredPrompt.userChoice;}catch(e){} deferredPrompt=null;$("btnInstallFront").hidden=true;$("btnInstallSet").hidden=true;};
+$("btnInstallFront").addEventListener("click",doInstall); $("btnInstallSet").addEventListener("click",doInstall);
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}
+
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&running) end();});
+cleanupRecs();
+showScreen("front");
+})();
+</script>
+</body>
+</html>
